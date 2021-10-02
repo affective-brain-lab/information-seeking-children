@@ -3,8 +3,7 @@
 # in Molinaro, Cogliati Dezza, & Sharot (in prep.)
 
 # SET WORKING DIRECTORY
-# wd = "insert_your_wd_here"
-wd = "C:/Gaia/ABL"
+wd = "insert_your_wd_here"
 
 #### LOAD REQUIRED PACKAGES #####
 packages <- c("ggplot2", "GGally", "ggpubr", "afex", "plyr", "psych", "nls2", 
