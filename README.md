@@ -2,11 +2,19 @@
 Data and code from manuscript: Molinaro, Cogliati Dezza, &amp; Sharot (in prep.)
 
 ## Description of data files
-### data_main_experiment.csv
+### data_main_experiment_children.csv
 * var
 * var
 
-### data_supplementary_experiment_1.csv
+### data_main_experiment_adults.csv
+* var
+* var
+
+### data_supplementary_experiment_1_children.csv
+* var
+* var
+
+### data_supplementary_experiment_1_adults.csv
 * var
 * var
 
