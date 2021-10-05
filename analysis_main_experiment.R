@@ -15,8 +15,9 @@ pacman::p_load(packages, character.only = TRUE)
 
 #### MAIN EXPERIMENT (COMPETITION) ####
 #### Load and prep datasets #### 
-setwd(wd)
-dat_compt <- read.csv("lookit_competition_check5_trials.csv")
+
+## Load children's data
+dat_compt <- read.csv("data_main_experiment_children.csv")
 dat_compt <- subset(dat_compt, !(condition %in% c("catch_1", "catch_2")))
 dat_compt <- subset(dat_compt, !(age_in_years == 13))
 dat_compt <- subset(dat_compt, catch_trials_score == 100)
@@ -32,17 +33,17 @@ dat_compt$age_group <- factor(dat_compt$age_group, levels=c("4-5", "6-7", "8-9",
 
 # Turn variables into appropriate data types
 # Use scale() for standardized values
-dat_compt$non_z_delta_EV <- (as.numeric(dat_compt$delta_EV))
-dat_compt$non_z_delta_uncertainty_level <- (as.numeric(dat_compt$delta_uncertainty_level))
-dat_compt$non_z_delta_agency<- (as.numeric(dat_compt$delta_agency))
-dat_compt$delta_EV <- scale(as.numeric(dat_compt$delta_EV))
-dat_compt$delta_uncertainty_level <- scale(as.numeric(dat_compt$delta_uncertainty_level))
-dat_compt$delta_IU <- scale(as.numeric(dat_compt$delta_IU))
-dat_compt$delta_agency <- scale(as.numeric(dat_compt$delta_agency))
+dat_compt$delta_EV_non_Z <- as.numeric(dat_compt$delta_EV)
+dat_compt$delta_uncertainty_level_non_Z <- as.numeric(dat_compt$delta_uncertainty_level)
+dat_compt$delta_agency_non_Z <- as.numeric(dat_compt$delta_agency)
+#dat_compt$delta_EV <- scale(as.numeric(dat_compt$delta_EV))
+#dat_compt$delta_uncertainty_level <- scale(as.numeric(dat_compt$delta_uncertainty_level))
+#dat_compt$delta_agency <- scale(as.numeric(dat_compt$delta_agency))
+dat_compt$age_in_years_non_Z <- as.numeric(dat_compt$age_in_years)
 dat_compt$age_in_years <- scale(as.numeric(dat_compt$age_in_years))
 dat_compt$age_group_coded <- as.factor(dat_compt$age_group_coded)
 dat_compt$RT_info_choice <- scale(as.numeric(dat_compt$RT_info_choice))
-dat_compt$gorilla_ID <- as.factor(dat_compt$gorilla_ID)
+dat_compt$subject_ID <- as.factor(dat_compt$subject_ID)
 dat_compt$gender_coded <- as.factor(dat_compt$gender_coded)
 contrasts(dat_compt$gender_coded) <- contr.helmert(length(table(dat_compt$gender_coded)))
 dat_compt$info_choice <- as.factor(dat_compt$info_choice) # 0 = left, 1 = right
@@ -52,16 +53,89 @@ dat_compt$wob_non_Z <- as.numeric(dat_compt$wob)
 dat_compt$wob <- scale(as.numeric(dat_compt$wob))
 dat_compt$chance <- 0.5
 
-# Set subject IDs
-N <- length(sets::as.set(dat_compt$gorilla_ID))
-tot_trials <- length(sets::as.set(dat_compt$trial_number))
-subject_ID <- c()
-for (n in 1:N) {
-  for (t in 1:tot_trials){
-    subject_ID <- c(subject_ID, glue("subject_{n}"))
+## Compute scaled deltas
+# Find min and max and rescale between -1 and 1
+rescale_deltas <- function(dat, deltas=c("EV", "uncertainty_level", "agency")){
+  if ("EV" %in% deltas){
+    min_EV = min(as.numeric(c(dat$EV_L, dat$EV_R)))
+    max_EV = max(as.numeric(c(dat$EV_L, dat$EV_R)))
+    dat$EV_L <- 2*((as.numeric(dat$EV_L) - min_EV)/(max_EV - min_EV)) -1
+    dat$EV_R <- 2*((as.numeric(dat$EV_R) - min_EV)/(max_EV - min_EV)) -1
+    dat$delta_EV <- dat$EV_R - dat$EV_L
+    }
+  if ("uncertainty_level" %in% deltas) {
+    min_uncertainty_level = min(as.numeric(c(dat$uncertainty_level_L, dat$uncertainty_level_R)))
+  max_uncertainty_level = max(as.numeric(c(dat$uncertainty_level_L, dat$uncertainty_level_R)))
+  dat$uncertainty_level_L <- 2*((as.numeric(dat$uncertainty_level_L) - min_uncertainty_level)/(max_uncertainty_level - min_uncertainty_level)) -1
+  dat$uncertainty_level_R <- 2*((as.numeric(dat$uncertainty_level_R) - min_uncertainty_level)/(max_uncertainty_level - min_uncertainty_level)) -1
+  dat$delta_uncertainty_level <- dat$uncertainty_level_R - dat$uncertainty_level_L
+  }
+  if ("agency" %in% deltas) {
+    min_agency = min(as.numeric(c(dat$agency_probL, dat$agency_probR)))
+  max_agency = max(as.numeric(c(dat$agency_probL, dat$agency_probR)))
+  dat$agency_probL <- 2*((as.numeric(dat$agency_probL) - min_agency)/(max_agency - min_agency)) -1
+  dat$agency_probR <- 2*((as.numeric(dat$agency_probR) - min_agency)/(max_agency - min_agency)) -1
+  dat$delta_agency <- dat$agency_probR - dat$agency_probL
+  }
+  return(dat)
+}
+
+dat_compt <- rescale_deltas(dat_compt)
+
+# Check rescaled and raw deltas have the same sign
+check_delta_signs <- function(dat, deltas=c("EV", "uncertainty_level", "agency")) {
+  num_trials <- length(dat$subject_ID)
+  
+  if ("EV" %in% deltas){
+    check_EV_sign <- num_trials
+  for (i in 1:num_trials) {
+    if(((dat$delta_EV_non_Z[i] < 0) & (dat$delta_EV[i] < 0)) 
+       | ((dat$delta_EV_non_Z[i] > 0) & (dat$delta_EV[i] > 0))
+       | ((dat$delta_EV_non_Z[i] == 0) & (dat$delta_EV[i] == 0))) {
+      check_EV_sign = check_EV_sign - 1
+    }
+  } 
+  if (check_EV_sign == 0) {
+    print("rescale delta EV check passed")
+  } else {
+    print("rescale delta EV check failed")
+  }
+  }
+  
+  if ("uncertainty_level" %in% deltas){
+    check_uncertainty_level_sign <- num_trials
+  for (i in 1:num_trials) {
+    if(((dat$delta_uncertainty_level_non_Z[i] < 0) & (dat$delta_uncertainty_level[i] < 0)) 
+       | ((dat$delta_uncertainty_level_non_Z[i] > 0) & (dat$delta_uncertainty_level[i] > 0))
+       | ((dat$delta_uncertainty_level_non_Z[i] == 0) & (dat$delta_uncertainty_level[i] == 0))) {
+      check_uncertainty_level_sign = check_uncertainty_level_sign - 1
+    }
+  } 
+  if (check_uncertainty_level_sign == 0) {
+    print("rescale delta uncertainty_level check passed")
+  } else {
+    print("rescale delta uncertainty_level check failed")
+  }
+  }
+  
+  if ("agency" %in% deltas) {
+    check_agency_sign <- num_trials
+  for (i in 1:num_trials) {
+    if(((dat$delta_agency_non_Z[i] < 0) & (dat$delta_agency[i] < 0)) 
+       | ((dat$delta_agency_non_Z[i] > 0) & (dat$delta_agency[i] > 0))
+       | ((dat$delta_agency_non_Z[i] == 0) & (dat$delta_agency[i] == 0))) {
+      check_agency_sign = check_agency_sign - 1
+    }
+  } 
+  if (check_agency_sign == 0) {
+    print("rescale delta agency check passed")
+  } else {
+    print("rescale delta agency check failed")
+  }
   }
 }
-dat_compt$subject_ID <- as.factor(subject_ID)
+
+check_delta_signs(dat_compt)
 
 # Create subsets of data for each age group
 dat_compt_4_5 <- subset(dat_compt, age_group == "4-5")
@@ -69,9 +143,9 @@ dat_compt_6_7 <- subset(dat_compt, age_group == "6-7")
 dat_compt_8_9 <- subset(dat_compt, age_group == "8-9")
 dat_compt_10_12 <- subset(dat_compt, age_group == "10-12")
 
-## Competition between motives - adults
+## Load adults' data
 setwd(wd)
-adu_dat_compt <- read.csv("adults_competition_check1_trials.csv")
+adu_dat_compt <- read.csv("data_main_experiment_adults.csv")
 adu_dat_compt <- subset(adu_dat_compt, !(condition %in% c("catch_1", "catch_2")))
 adu_dat_compt <- subset(adu_dat_compt, (catch_trials_score == 100) & (wob > 0.5))
 
@@ -79,16 +153,20 @@ adu_dat_compt <- subset(adu_dat_compt, (catch_trials_score == 100) & (wob > 0.5)
 adu_dat_compt$trial_number <- substr(adu_dat_compt$condition, 7, 8)
 
 # Turn variables into appropriate data types
-adu_dat_compt$delta_EV <- scale(as.numeric(adu_dat_compt$delta_EV))
-adu_dat_compt$delta_uncertainty_level <- scale(as.numeric(adu_dat_compt$delta_uncertainty_level))
-adu_dat_compt$delta_IU <- scale(as.numeric(adu_dat_compt$delta_IU))
-adu_dat_compt$delta_agency <- scale(as.numeric(adu_dat_compt$delta_agency))
-adu_dat_compt$age_in_years_non_z <- as.numeric(adu_dat_compt$age_in_years)
-adu_dat_compt$age_in_years <- scale(as.numeric(adu_dat_compt$age_in_years))
+adu_dat_compt$delta_EV_non_Z <- as.numeric(adu_dat_compt$delta_EV)
+adu_dat_compt$delta_uncertainty_level_non_Z <- as.numeric(adu_dat_compt$delta_uncertainty_level)
+adu_dat_compt$delta_agency_non_Z <- as.numeric(adu_dat_compt$delta_agency)
+#adu_dat_compt$delta_EV <- scale(as.numeric(adu_dat_compt$delta_EV))
+#adu_dat_compt$delta_uncertainty_level <- scale(as.numeric(adu_dat_compt$delta_uncertainty_level))
+#adu_dat_compt$delta_IU <- scale(as.numeric(adu_dat_compt$delta_IU))
+#adu_dat_compt$delta_agency <- scale(as.numeric(adu_dat_compt$delta_agency))
+adu_dat_compt$age_in_years_non_Z <- as.numeric(adu_dat_compt$age_in_years)
+adu_dat_compt$age_in_years <- adu_dat_compt$age_in_years_non_Z
+#adu_dat_compt$age_in_years <- scale(as.numeric(adu_dat_compt$age_in_years))
 adu_dat_compt$age_group <- "Adult"
 adu_dat_compt$age_group_coded <- as.factor(4)
 adu_dat_compt$RT_info_choice <- scale(as.numeric(adu_dat_compt$RT_info_choice))
-adu_dat_compt$gorilla_ID <- as.factor(adu_dat_compt$gorilla_ID)
+adu_dat_compt$subject_ID <- as.factor(adu_dat_compt$subject_ID)
 adu_dat_compt$gender_coded <- as.factor(adu_dat_compt$gender_coded)
 contrasts(adu_dat_compt$gender_coded) <- contr.helmert(3)
 adu_dat_compt$info_choice <- as.factor(adu_dat_compt$info_choice) # 0 = left, 1 = right
@@ -98,20 +176,16 @@ adu_dat_compt$wob_non_Z <- as.numeric(adu_dat_compt$wob)
 adu_dat_compt$wob <- scale(as.numeric(adu_dat_compt$wob))
 adu_dat_compt$chance <- 0.5
 
-# Set subject IDs
-adu_N <- length(sets::as.set(adu_dat_compt$gorilla_ID))
-adu_tot_trials <- length(sets::as.set(adu_dat_compt$trial_number))
-adu_subject_ID <- c()
-for (n in 1:adu_N) {
-  for (t in 1:adu_tot_trials){
-    adu_subject_ID <- c(adu_subject_ID, glue("subject_{n}"))
-  }
-}
-adu_dat_compt <- as.factor(adu_subject_ID)
+## Compute scaled deltas
+# Find min and max and rescale between -1 and 1
+adu_dat_compt <- rescale_deltas(adu_dat_compt)
+
+# Check rescaled and raw deltas have the same sign (adults)
+check_delta_signs(adu_dat_compt)
 
 ## Merged datasets (children + adults)
 # Create data subsets
-cols <- c("gorilla_ID", "info_choice", 
+cols <- c("subject_ID", "info_choice", 
           "delta_EV", "delta_uncertainty_level", "delta_agency", 
           "gender_coded", "wob", "percent_comprehension", 
           "wob_non_Z", "percent_comprehension_non_Z", 
@@ -145,6 +219,19 @@ contrasts(dat_compt_4_5_adu$group) <- contr.helmert(2)
 contrasts(dat_compt_6_7_adu$group) <- contr.helmert(2)
 contrasts(dat_compt_8_9_adu$group) <- contr.helmert(2)
 contrasts(dat_compt_10_12_adu$group) <- contr.helmert(2)
+
+#### Demographics ####
+summary(subset(dat_compt, trial_number==1)$age_in_years_non_Z)
+sd(subset(dat_compt, trial_number==1)$age_in_years_non_Z)
+psych::describeBy(subset(dat_compt, trial_number==1)$age_in_years_non_Z, 
+           subset(dat_compt, trial_number==1)$age_group)
+table(subset(dat_compt, trial_number==1)$gender)
+table(subset(dat_compt, trial_number==1)$gender, 
+      subset(dat_compt, trial_number==1)$age_group)
+psych::describeBy(subset(adu_dat_compt, trial_number==1)$age_in_years_non_Z, 
+           subset(adu_dat_compt, trial_number==1)$age_group)
+table(subset(adu_dat_compt, trial_number==1)$gender, 
+      subset(adu_dat_compt, trial_number==1)$age_group)
 
 #### Comprehension and wob scores ####
 ## t-tests
