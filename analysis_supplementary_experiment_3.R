@@ -8,7 +8,7 @@ wd = "insert_your_wd_here"
 #### SUPPLEMENTARY EXPERIMENT 3 (INSTRUMENTAL UTILITY CONTROL) ####
 #### SE3 Load and prep datasets #### 
 setwd(wd)
-dat_ins_ctrl <- read.csv("lookit_ins_control_updated_trials.csv")
+dat_ins_ctrl <- read.csv("data_supplementary_experiment_3.csv")
 dat_ins_ctrl <- subset(dat_ins_ctrl, !(condition %in% c("catch_1", "catch_2")))
 dat_ins_ctrl <- subset(dat_ins_ctrl, !(age_in_years == 13))
 dat_ins_ctrl <- subset(dat_ins_ctrl, catch_trials_score == 100)
@@ -30,18 +30,31 @@ dat_ins_ctrl$age_group_coded <- factor(dat_ins_ctrl$age_group_coded, levels=c("4
 
 # Turn variables into appropriate data types
 # Use scale() for standardized values
-dat_ins_ctrl$non_z_delta_agency <- (as.numeric(dat_ins_ctrl$delta_agency))
-dat_ins_ctrl$delta_agency <- scale(as.numeric(dat_ins_ctrl$delta_agency))
+dat_ins_ctrl$delta_agency_non_Z <- (as.numeric(dat_ins_ctrl$delta_agency))
+#dat_ins_ctrl$delta_agency <- scale(as.numeric(dat_ins_ctrl$delta_agency))
+dat_ins_ctrl$age_in_years_non_Z <- as.numeric(dat_ins_ctrl$age_in_years)
 dat_ins_ctrl$age_in_years <- scale(as.numeric(dat_ins_ctrl$age_in_years))
 dat_ins_ctrl$age_group_coded <- as.factor(dat_ins_ctrl$age_group_coded)
 dat_ins_ctrl$RT_info_choice <- scale(as.numeric(dat_ins_ctrl$RT_info_choice))
-dat_ins_ctrl$gorilla_ID <- as.factor(dat_ins_ctrl$gorilla_ID)
+dat_ins_ctrl$subject_ID <- as.factor(dat_ins_ctrl$subject_ID)
 dat_ins_ctrl$gender_coded <- as.factor(dat_ins_ctrl$gender_coded)
 contrasts(dat_ins_ctrl$gender_coded) <- contr.helmert(length(table(dat_ins_ctrl$gender_coded)))
 dat_ins_ctrl$info_choice <- as.factor(dat_ins_ctrl$info_choice) # 0 = left, 1 = right
 dat_ins_ctrl$percent_comprehension_non_Z <- as.numeric(dat_ins_ctrl$percent_comprehension)
 dat_ins_ctrl$percent_comprehension <- scale(as.numeric(dat_ins_ctrl$percent_comprehension))
 dat_ins_ctrl$chance <- 0.5
+
+## SE2 Compute scaled deltas
+# Find min and max and rescale between -1 and 1
+dat_ins_ctrl <- rescale_deltas(dat_ins_ctrl, c("agency"))
+
+# Check rescaled and raw deltas have the same sign
+check_delta_signs(dat_ins_ctrl, c("agency"))
+
+#### SE3 Demographics ####
+summary(subset(dat_ins_ctrl, condition=="instrumental_1")$age_in_years_non_Z)
+sd(subset(dat_ins_ctrl, condition=="instrumental_1")$age_in_years_non_Z)
+table(subset(dat_ins_ctrl, condition=="instrumental_1")$gender)
 
 #### SE2 Comprehension scores ####
 mean(subset(dat_ins_ctrl, condition == "instrumental_1")$percent_comprehension_non_Z)
