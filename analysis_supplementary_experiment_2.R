@@ -8,7 +8,7 @@
 #### SUPPLEMENTARY EXPERIMENT 2 (COGNITIVE UTILITY CONTROL) ####
 #### SE2 Load and prep datasets #### 
 setwd(wd)
-dat_cog_ctrl <- read.csv("lookit_cog_control_updated_trials.csv")
+dat_cog_ctrl <- read.csv("data_supplementary_experiment_2.csv")
 dat_cog_ctrl <- subset(dat_cog_ctrl, !(condition %in% c("catch_1", "catch_2")))
 dat_cog_ctrl <- subset(dat_cog_ctrl, !(age_in_years == 13))
 dat_cog_ctrl <- subset(dat_cog_ctrl, catch_trials_score == 100)
@@ -33,18 +33,31 @@ dat_cog_ctrl$age_group_coded <- factor(dat_cog_ctrl$age_group_coded, levels=c("4
 
 # Turn variables into appropriate data types
 # Use scale() for standardized values
-dat_cog_ctrl$non_z_delta_uncertainty_level <- (as.numeric(dat_cog_ctrl$delta_uncertainty_level))
-dat_cog_ctrl$delta_uncertainty_level <- scale(as.numeric(dat_cog_ctrl$delta_uncertainty_level))
+dat_cog_ctrl$delta_uncertainty_level_non_Z <- (as.numeric(dat_cog_ctrl$delta_uncertainty_level))
+#dat_cog_ctrl$delta_uncertainty_level <- scale(as.numeric(dat_cog_ctrl$delta_uncertainty_level))
+dat_cog_ctrl$age_in_years_non_Z <- as.numeric(dat_cog_ctrl$age_in_years)
 dat_cog_ctrl$age_in_years <- scale(as.numeric(dat_cog_ctrl$age_in_years))
 dat_cog_ctrl$age_group_coded <- as.factor(dat_cog_ctrl$age_group_coded)
 dat_cog_ctrl$RT_info_choice <- scale(as.numeric(dat_cog_ctrl$RT_info_choice))
-dat_cog_ctrl$gorilla_ID <- as.factor(dat_cog_ctrl$gorilla_ID)
+dat_cog_ctrl$subject_ID <- as.factor(dat_cog_ctrl$subject_ID)
 dat_cog_ctrl$gender_coded <- as.factor(dat_cog_ctrl$gender_coded)
 contrasts(dat_cog_ctrl$gender_coded) <- contr.helmert(length(table(dat_cog_ctrl$gender_coded)))
 dat_cog_ctrl$info_choice <- as.factor(dat_cog_ctrl$info_choice) # 0 = left, 1 = right
 dat_cog_ctrl$percent_comprehension_non_Z <- as.numeric(dat_cog_ctrl$percent_comprehension)
 dat_cog_ctrl$percent_comprehension <- scale(as.numeric(dat_cog_ctrl$percent_comprehension))
 dat_cog_ctrl$chance <- 0.5
+
+## SE2 Compute scaled deltas
+# Find min and max and rescale between -1 and 1
+dat_cog_ctrl <- rescale_deltas(dat_cog_ctrl, c("uncertainty_level"))
+
+# Check rescaled and raw deltas have the same sign
+check_delta_signs(dat_cog_ctrl, c("uncertainty_level"))
+
+#### SE2 Demographics ####
+summary(subset(dat_cog_ctrl, condition=="cognitive_1")$age_in_years_non_Z)
+sd(subset(dat_cog_ctrl, condition=="cognitive_1")$age_in_years_non_Z)
+table(subset(dat_cog_ctrl, condition=="cognitive_1")$gender)
 
 #### SE2 Comprehension scores ####
 mean(subset(dat_cog_ctrl, condition == "cognitive_1")$percent_comprehension_non_Z)
