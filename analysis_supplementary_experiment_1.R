@@ -13,140 +13,116 @@ packages <- c("ggplot2", "GGally", "ggpubr", "afex", "plyr", "psych", "nls2",
 pacman::p_load(packages, character.only = TRUE)
 
 
-#### MAIN EXPERIMENT (COMPETITION) ####
-#### Load and prep datasets #### 
+#### SUPPLEMENTARY EXPERIMENT 1 (NO COMPETITION) ####
+#### SE1 Load and prep datasets #### 
 setwd(wd)
-
-## Children's data
-dat_compt <- read.csv("data_main_experiment_children")
-dat_compt <- subset(dat_compt, !(condition %in% c("catch_1", "catch_2")))
-dat_compt <- subset(dat_compt, !(age_in_years == 13))
-dat_compt <- subset(dat_compt, catch_trials_score == 100)
-dat_compt <- subset(dat_compt, wob > 0.5)
+dat_no_compt <- read.csv("data_supplementary_experiment_1_children.csv")
+dat_no_compt <- subset(dat_no_compt, !(condition %in% c("catch_1", "catch_2")))
+dat_no_compt <- subset(dat_no_compt, !(age_in_years == 13))
+dat_no_compt <- subset(dat_no_compt, catch_trials_score == 100)
+dat_no_compt <- subset(dat_no_compt, wob > 0.5)
+# Rename variables with mislabelled heading
+dat_no_compt$delta_uncertainty_level <- dat_no_compt$delta_uncertainty
+dat_no_compt$uncertainty_level_L <- dat_no_compt$uncertainty_L
+dat_no_compt$uncertainty_level_R <- dat_no_compt$uncertainty_R
+dat_no_compt$subject_ID <- dat_no_compt$ï..subject_ID
 
 # Create age groups
-dat_compt$age_group <- "None"
-dat_compt$age_group[dat_compt$age_in_years  %in% c(4, 5)] <- "4-5"
-dat_compt$age_group[dat_compt$age_in_years  %in% c(6, 7)] <- "6-7"
-dat_compt$age_group[dat_compt$age_in_years  %in% c(8, 9)] <- "8-9"
-dat_compt$age_group[dat_compt$age_in_years  %in% c(10, 11, 12)] <- "10-12"
-dat_compt$age_group <- factor(dat_compt$age_group, levels=c("4-5", "6-7", "8-9","10-12"))
+dat_no_compt$age_group <- "None"
+dat_no_compt$age_group[dat_no_compt$age_in_years  %in% c(4, 5)] <- "4-5"
+dat_no_compt$age_group[dat_no_compt$age_in_years  %in% c(6, 7)] <- "6-7"
+dat_no_compt$age_group[dat_no_compt$age_in_years  %in% c(8, 9)] <- "8-9"
+dat_no_compt$age_group[dat_no_compt$age_in_years  %in% c(10, 11, 12)] <- "10-12"
+dat_no_compt$age_group <- factor(dat_no_compt$age_group, levels=c("4-5", "6-7", "8-9","10-12"))
 
 # Turn variables into appropriate data types
 # Use scale() for standardized values
-dat_compt$non_z_delta_EV <- (as.numeric(dat_compt$delta_EV))
-dat_compt$non_z_delta_uncertainty_level <- (as.numeric(dat_compt$delta_uncertainty_level))
-dat_compt$non_z_delta_agency<- (as.numeric(dat_compt$delta_agency))
-dat_compt$delta_EV <- scale(as.numeric(dat_compt$delta_EV))
-dat_compt$delta_uncertainty_level <- scale(as.numeric(dat_compt$delta_uncertainty_level))
-dat_compt$delta_IU <- scale(as.numeric(dat_compt$delta_IU))
-dat_compt$delta_agency <- scale(as.numeric(dat_compt$delta_agency))
-dat_compt$age_in_years <- scale(as.numeric(dat_compt$age_in_years))
-dat_compt$age_group_coded <- as.factor(dat_compt$age_group_coded)
-dat_compt$RT_info_choice <- scale(as.numeric(dat_compt$RT_info_choice))
-dat_compt$gorilla_ID <- as.factor(dat_compt$gorilla_ID)
-dat_compt$gender_coded <- as.factor(dat_compt$gender_coded)
-contrasts(dat_compt$gender_coded) <- contr.helmert(length(table(dat_compt$gender_coded)))
-dat_compt$info_choice <- as.factor(dat_compt$info_choice) # 0 = left, 1 = right
-dat_compt$percent_comprehension_non_Z <- as.numeric(dat_compt$percent_comprehension)
-dat_compt$percent_comprehension <- scale(as.numeric(dat_compt$percent_comprehension))
-dat_compt$wob_non_Z <- as.numeric(dat_compt$wob)
-dat_compt$wob <- scale(as.numeric(dat_compt$wob))
-dat_compt$chance <- 0.5
+dat_no_compt$delta_EV_non_Z <- (as.numeric(dat_no_compt$delta_EV))
+dat_no_compt$delta_uncertainty_level_non_Z <- (as.numeric(dat_no_compt$delta_uncertainty_level))
+dat_no_compt$delta_agency_non_Z<- (as.numeric(dat_no_compt$delta_agency))
+#dat_no_compt$delta_EV <- scale(as.numeric(dat_no_compt$delta_EV))
+#dat_no_compt$delta_uncertainty_level <- scale(as.numeric(dat_no_compt$delta_uncertainty_level))
+#dat_no_compt$delta_agency <- scale(as.numeric(dat_no_compt$delta_agency))
+dat_no_compt$age_in_years_non_Z <- as.numeric(dat_no_compt$age_in_years)
+dat_no_compt$age_in_years <- scale(as.numeric(dat_no_compt$age_in_years))
+dat_no_compt$age_group_coded <- as.factor(dat_no_compt$age_group_coded)
+dat_no_compt$RT_info_choice <- scale(as.numeric(dat_no_compt$RT_info_choice))
+dat_no_compt$subject_ID <- as.factor(dat_no_compt$subject_ID)
+dat_no_compt$gender_coded <- as.factor(dat_no_compt$gender_coded)
+contrasts(dat_no_compt$gender_coded) <- contr.helmert(length(table(dat_no_compt$gender_coded)))
+dat_no_compt$info_choice <- as.factor(dat_no_compt$info_choice) # 0 = left, 1 = right
+dat_no_compt$percent_comprehension_non_Z <- as.numeric(dat_no_compt$percent_comprehension)
+dat_no_compt$percent_comprehension <- scale(as.numeric(dat_no_compt$percent_comprehension))
+dat_no_compt$wob_non_Z <- as.numeric(dat_no_compt$wob)
+dat_no_compt$wob <- scale(as.numeric(dat_no_compt$wob))
+dat_no_compt$chance <- 0.5
 
-# Set subject IDs
-N <- length(sets::as.set(dat_compt$gorilla_ID))
-tot_trials <- length(sets::as.set(dat_compt$trial_number))
-subject_ID <- c()
-for (n in 1:N) {
-  for (t in 1:tot_trials){
-    subject_ID <- c(subject_ID, glue("subject_{n}"))
-  }
-}
-dat_compt$subject_ID <- as.factor(subject_ID)
+## SE1 Compute scaled deltas (chidlren)
+# Find min and max and rescale between -1 and 1
+rescale_deltas(dat_no_compt)
 
-# Create subsets of data for each age group
-dat_compt_4_5 <- subset(dat_compt, age_group == "4-5")
-dat_compt_6_7 <- subset(dat_compt, age_group == "6-7")
-dat_compt_8_9 <- subset(dat_compt, age_group == "8-9")
-dat_compt_10_12 <- subset(dat_compt, age_group == "10-12")
+# Check rescaled and raw deltas have the same sign
+check_delta_signs(dat_no_compt)
 
-## Load adults data
-setwd(wd)
-adu_dat_compt <- read.csv("data_main_experiment_adults.csv")
-adu_dat_compt <- subset(adu_dat_compt, !(condition %in% c("catch_1", "catch_2")))
-adu_dat_compt <- subset(adu_dat_compt, (catch_trials_score == 100) & (wob > 0.5))
-
-# Fix trial number
-adu_dat_compt$trial_number <- substr(adu_dat_compt$condition, 7, 8)
+## SE1 - adults
+adu_dat_no_compt <- read.csv("data_supplementary_experiment_1_adults.csv")
+adu_dat_no_compt <- subset(adu_dat_no_compt, !(condition %in% c("catch_1", "catch_2")))
+adu_dat_no_compt <- subset(adu_dat_no_compt, (catch_trials_score == 100) & (wob > 0.5))
 
 # Turn variables into appropriate data types
-adu_dat_compt$delta_EV <- scale(as.numeric(adu_dat_compt$delta_EV))
-adu_dat_compt$delta_uncertainty_level <- scale(as.numeric(adu_dat_compt$delta_uncertainty_level))
-adu_dat_compt$delta_IU <- scale(as.numeric(adu_dat_compt$delta_IU))
-adu_dat_compt$delta_agency <- scale(as.numeric(adu_dat_compt$delta_agency))
-adu_dat_compt$age_in_years_non_z <- as.numeric(adu_dat_compt$age_in_years)
-adu_dat_compt$age_in_years <- scale(as.numeric(adu_dat_compt$age_in_years))
-adu_dat_compt$age_group <- "Adult"
-adu_dat_compt$age_group_coded <- as.factor(4)
-adu_dat_compt$RT_info_choice <- scale(as.numeric(adu_dat_compt$RT_info_choice))
-adu_dat_compt$gorilla_ID <- as.factor(adu_dat_compt$gorilla_ID)
-adu_dat_compt$gender_coded <- as.factor(adu_dat_compt$gender_coded)
-contrasts(adu_dat_compt$gender_coded) <- contr.helmert(3)
-adu_dat_compt$info_choice <- as.factor(adu_dat_compt$info_choice) # 0 = left, 1 = right
-adu_dat_compt$percent_comprehension_non_Z <- as.numeric(adu_dat_compt$percent_comprehension)
-adu_dat_compt$percent_comprehension <- scale(as.numeric(adu_dat_compt$percent_comprehension))
-adu_dat_compt$wob_non_Z <- as.numeric(adu_dat_compt$wob)
-adu_dat_compt$wob <- scale(as.numeric(adu_dat_compt$wob))
-adu_dat_compt$chance <- 0.5
+adu_dat_no_compt$delta_EV_non_Z <- as.numeric(adu_dat_no_compt$delta_EV)
+adu_dat_no_compt$delta_uncertainty_level_non_Z <- as.numeric(adu_dat_no_compt$delta_uncertainty_level)
+adu_dat_no_compt$delta_agency_non_Z <- as.numeric(adu_dat_no_compt$delta_agency)
+# adu_dat_no_compt$delta_EV <- scale(as.numeric(adu_dat_no_compt$delta_EV))
+# adu_dat_no_compt$delta_uncertainty_level <- scale(as.numeric(adu_dat_no_compt$delta_uncertainty_level))
+# adu_dat_no_compt$delta_agency <- scale(as.numeric(adu_dat_no_compt$delta_agency))
+adu_dat_no_compt$age_in_years_non_Z <- as.numeric(adu_dat_no_compt$age_in_years)
+adu_dat_no_compt$age_in_years <- scale(as.numeric(adu_dat_no_compt$age_in_years))
+adu_dat_no_compt$age_group <- "Adult"
+adu_dat_no_compt$age_group_coded <- as.factor(4)
+adu_dat_no_compt$RT_info_choice <- scale(as.numeric(adu_dat_no_compt$RT_info_choice))
+adu_dat_no_compt$subject_ID <- as.factor(adu_dat_no_compt$subject_ID)
+adu_dat_no_compt$gender_coded <- as.factor(adu_dat_no_compt$gender_coded)
+contrasts(adu_dat_no_compt$gender_coded) <- contr.helmert(2)
+adu_dat_no_compt$info_choice <- as.factor(adu_dat_no_compt$info_choice) # 0 = left, 1 = right
+adu_dat_no_compt$percent_comprehension_non_Z <- as.numeric(adu_dat_no_compt$percent_comprehension)
+adu_dat_no_compt$percent_comprehension <- scale(as.numeric(adu_dat_no_compt$percent_comprehension))
+adu_dat_no_compt$wob_non_Z <- as.numeric(adu_dat_no_compt$wob)
+adu_dat_no_compt$wob <- scale(as.numeric(adu_dat_no_compt$wob))
+adu_dat_no_compt$chance <- 0.5
 
-# Set subject IDs
-adu_N <- length(sets::as.set(adu_dat_compt$gorilla_ID))
-adu_tot_trials <- length(sets::as.set(adu_dat_compt$trial_number))
-adu_subject_ID <- c()
-for (n in 1:adu_N) {
-  for (t in 1:adu_tot_trials){
-    adu_subject_ID <- c(adu_subject_ID, glue("subject_{n}"))
-  }
-}
-adu_dat_compt <- as.factor(adu_subject_ID)
+## SE1 Compute scaled deltas (chidlren)
+# Find min and max and rescale between -1 and 1
+rescale_deltas(adu_dat_no_compt)
 
-## Merged datasets (children + adults)
-# Create data subsets
-cols <- c("gorilla_ID", "info_choice", 
+# Check rescaled and raw deltas have the same sign
+check_delta_signs(adu_dat_no_compt)
+
+## SE1 Merged data sets (children + adults) 
+cols <- c("subject_ID", "info_choice", 
           "delta_EV", "delta_uncertainty_level", "delta_agency", 
           "gender_coded", "wob", "percent_comprehension", 
-          "wob_non_Z", "percent_comprehension_non_Z", 
           "age_group", "age_group_coded")
-dat_compt_child_adu <- rbind(dplyr::select(dat_compt, all_of(cols)), 
-                             dplyr::select(adu_dat_compt, all_of(cols)))
-dat_compt_4_5_adu <- rbind(dplyr::select(dat_compt_4_5, all_of(cols)), 
-                           dplyr::select(adu_dat_compt, all_of(cols)))
-dat_compt_6_7_adu <- rbind(dplyr::select(dat_compt_6_7, all_of(cols)), 
-                           dplyr::select(adu_dat_compt, all_of(cols)))
-dat_compt_8_9_adu <- rbind(dplyr::select(dat_compt_8_9, all_of(cols)), 
-                           dplyr::select(adu_dat_compt, all_of(cols)))
-dat_compt_10_12_adu <- rbind(dplyr::select(dat_compt_10_12, all_of(cols)), 
-                             dplyr::select(adu_dat_compt, all_of(cols)))
+dat_no_compt_child_adu <- rbind(dplyr::select(dat_no_compt, all_of(cols)), 
+                                dplyr::select(adu_dat_no_compt, all_of(cols)))
 
-# Fix gender contrasts (children only had 2 levels, adults had 3)
-contrasts(dat_compt_child_adu$gender_coded) <- contr.helmert(3)
-contrasts(dat_compt_4_5_adu$gender_coded) <- contr.helmert(3)
-contrasts(dat_compt_6_7_adu$gender_coded) <- contr.helmert(3)
-contrasts(dat_compt_8_9_adu$gender_coded) <- contr.helmert(3)
-contrasts(dat_compt_10_12_adu$gender_coded) <- contr.helmert(3)
+# Create new variable and contrasts for children vs adults factor
+dat_no_compt_child_adu$group <- as.factor(ifelse(dat_no_compt_child_adu$age_group_coded == 4, "Adults", "Children"))
+contrasts(dat_no_compt_child_adu$group) <- contr.helmert(2)
 
-# Create new variable and  contrasts for children vs adults factor
-dat_compt_child_adu$group <- as.factor(ifelse(dat_compt_child_adu$age_group_coded == 4, "Adults", "Children"))
-dat_compt_4_5_adu$group <- as.factor(ifelse(dat_compt_4_5_adu$age_group_coded == 4, "Adults", "Children"))
-dat_compt_6_7_adu$group <-  as.factor(ifelse(dat_compt_6_7_adu$age_group_coded == 4, "Adults", "Children"))
-dat_compt_8_9_adu$group <-  as.factor(ifelse(dat_compt_8_9_adu$age_group_coded == 4, "Adults", "Children"))
-dat_compt_10_12_adu$group <-  as.factor(ifelse(dat_compt_10_12_adu$age_group_coded == 4, "Adults", "Children"))
-contrasts(dat_compt_child_adu$group) <- contr.helmert(2)
-contrasts(dat_compt_4_5_adu$group) <- contr.helmert(2)
-contrasts(dat_compt_6_7_adu$group) <- contr.helmert(2)
-contrasts(dat_compt_8_9_adu$group) <- contr.helmert(2)
-contrasts(dat_compt_10_12_adu$group) <- contr.helmert(2)
+#### SE1 Demographics ####
+summary(subset(dat_no_compt, condition=="affective_1")$age_in_years_non_Z)
+sd(subset(dat_no_compt, condition=="affective_1")$age_in_years_non_Z)
+psych::psych::describeBy(subset(dat_no_compt, condition=="affective_1")$age_in_years_non_Z, 
+           subset(dat_no_compt, condition=="affective_1")$age_group)
+table(subset(dat_no_compt, condition=="affective_1")$gender)
+table(subset(dat_no_compt, condition=="affective_1")$gender, 
+      subset(dat_no_compt, condition=="affective_1")$age_group)
+psych::describeBy(subset(adu_dat_no_compt, condition=="affective_1")$age_in_years_non_Z, 
+           subset(adu_dat_no_compt, condition=="affective_1")$age_group)
+table(subset(adu_dat_no_compt, condition=="affective_1")$gender, 
+      subset(adu_dat_no_compt, condition=="affective_1")$age_group)
+
 
 #### Comprehension and wob scores ####
 ## t-tests
