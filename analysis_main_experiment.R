@@ -9,10 +9,8 @@ rm(list = ls())
 wd = "insert_your_wd_here"
 setwd(wd)
 
-packages <- c("ggplot2", "GGally", "ggpubr", "afex", "plyr", "psych", "nls2", 
-              "grid", "simr", "optimx", "plotrix", "BayesFactor", "ggcorrplot", 
-              "tidyverse", "glue", "sjPlot", "sjmisc", "gridExtra", "rsq", 
-              "RColorBrewer", "pwr")
+packages <- c("ggplot2", "GGally", "ggpubr", "psych", "nls2", "RColorBrewer",
+              "grid", "optimx", "ggcorrplot", "tidyverse", "glue", "gridExtra")
 pacman::p_load(packages, character.only = TRUE)
 
 # Additional basic functions
