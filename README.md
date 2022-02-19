@@ -47,34 +47,7 @@ Contains the following variables:
 ### data_main_experiment_adults.csv
 Contains the same variables as data_main_experiment_children.csv, but without age_group and age_group_coded
 
-### data_supplementary_experiment_1
-Contains the following variables:
-* subject_ID: the participant's ID
-* age_in_years: the participant's age in years
-* age_in_months: the participant's age in months	
-* gender: the participant's gender (Female, Male, Other)
-* gender_coded: the participant's gender (Female=0, Male=1, Other=2)
-* catch_trials_score: total score in the catch trials (2/2 correct=100, 1/2 correct=50, 0/2 corect=0)	
-* percent_comprehension: score on the instructions comprehension task	
-* info_choice: whether the participant wanted more information on the left or on the right side of the screen (left=0, right=1)	
-* combination_order: whether side 1 corresponds to left and 2 to right (0) or vice-versa (1)	
-* condition: condition (cognitive_n for normal trials, catch-n for catch trials)	
-* catch_trials: choice on catch trials ("only cans"=0, "only fish"=1)	
-* fishing_choiceL: whether the participant chose to fish on the left side, if given the option (yes=0, no=1)	
-* fishing_choiceR: whether the participant chose to fish on the right side, if given the option (yes=0, no=1)	
-* RT_catch: reaction time for catch_trials
-* RT_info_choice: reaction time for info_choice	
-* RT_fishingR: reaction time for fishing_choiceR
-* RT_fishingL: reaction time for fishing_choiceR		
-* uncertainty_level_1: number of seaweeds on the first side (according to the predifined condition)	
-* uncertainty_level_2: number of seaweeds on the second side (according to the predifined condition)		
-* uncertainty_level_L: number of seaweeds on the left side 	
-* uncertainty_level_R: number of seaweeds on the right side 		
-* delta_uncertainty_level: difference in number of seaweeds between the two sides (right - left)
-
-The file is ordered by condition, although conditions appeared in random order in the experiment.
-
-### data_supplementary_experiment_2.csv
+### data_supplementary_experiment_1.csv
 Contains the following variables:
 * subject_ID: the participant's ID
 * age_in_years: the participant's age in years
@@ -98,6 +71,33 @@ Contains the following variables:
 * agency_probL: number of seaweeds on the left side 	
 * agency_probR: number of seaweeds on the right side 		
 * delta_agency: difference in agency probability between the two sides (right - left)
+
+The file is ordered by condition, although conditions appeared in random order in the experiment.
+
+### data_supplementary_experiment_2
+Contains the following variables:
+* subject_ID: the participant's ID
+* age_in_years: the participant's age in years
+* age_in_months: the participant's age in months	
+* gender: the participant's gender (Female, Male, Other)
+* gender_coded: the participant's gender (Female=0, Male=1, Other=2)
+* catch_trials_score: total score in the catch trials (2/2 correct=100, 1/2 correct=50, 0/2 corect=0)	
+* percent_comprehension: score on the instructions comprehension task	
+* info_choice: whether the participant wanted more information on the left or on the right side of the screen (left=0, right=1)	
+* combination_order: whether side 1 corresponds to left and 2 to right (0) or vice-versa (1)	
+* condition: condition (cognitive_n for normal trials, catch-n for catch trials)	
+* catch_trials: choice on catch trials ("only cans"=0, "only fish"=1)	
+* fishing_choiceL: whether the participant chose to fish on the left side, if given the option (yes=0, no=1)	
+* fishing_choiceR: whether the participant chose to fish on the right side, if given the option (yes=0, no=1)	
+* RT_catch: reaction time for catch_trials
+* RT_info_choice: reaction time for info_choice	
+* RT_fishingR: reaction time for fishing_choiceR
+* RT_fishingL: reaction time for fishing_choiceR		
+* uncertainty_level_1: number of seaweeds on the first side (according to the predifined condition)	
+* uncertainty_level_2: number of seaweeds on the second side (according to the predifined condition)		
+* uncertainty_level_L: number of seaweeds on the left side 	
+* uncertainty_level_R: number of seaweeds on the right side 		
+* delta_uncertainty_level: difference in number of seaweeds between the two sides (right - left)
 
 The file is ordered by condition, although conditions appeared in random order in the experiment.
 
