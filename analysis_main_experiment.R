@@ -10,7 +10,7 @@ wd = "insert_your_wd_here"
 setwd(wd)
 
 packages <- c("ggplot2", "GGally", "ggpubr", "psych", "nls2", "RColorBrewer",
-              "grid", "optimx", "ggcorrplot", "tidyverse", "glue", "gridExtra")
+              "grid", "optimx", "ggcorrplot", "tidyverse", "glue", "gridExtra", "lme4")
 pacman::p_load(packages, character.only = TRUE)
 
 # Additional basic functions
