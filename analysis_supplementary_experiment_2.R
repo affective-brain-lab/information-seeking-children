@@ -9,7 +9,7 @@ rm(list = ls())
 wd = "insert_your_wd_here"
 
 #### LOAD REQUIRED PACKAGES #####
-packages <- c("psych", "optimx")
+packages <- c("psych", "optimx", "lme4")
 pacman::p_load(packages, character.only = TRUE)
 
 
