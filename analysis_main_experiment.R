@@ -1,3 +1,4 @@
+#### HOW CHILDREN DECIDE WHICK INFORMATION TO SEEK OUT ####
 # AUTHOR: GAIA MOLINARO
 # Data analysis for the main and supplementary experiments
 # in Molinaro, Cogliati Dezza, & Sharot (in prep.)
@@ -6,11 +7,12 @@
 rm(list = ls())
 
 # SET WORKING DIRECTORY
-wd = "insert_your_wd_here"
-setwd(wd)
+children_wd <- "insert_your_wd_here"
+adults_wd <- "insert_your_wd_here"
 
 packages <- c("ggplot2", "GGally", "ggpubr", "psych", "nls2", "RColorBrewer",
-              "grid", "optimx", "ggcorrplot", "tidyverse", "glue", "gridExtra", "lme4")
+              "grid", "optimx", "ggcorrplot", "tidyverse", "glue", "gridExtra", 
+              "lme4", "table1", "BayesFactor")
 pacman::p_load(packages, character.only = TRUE)
 
 # Additional basic functions
@@ -46,20 +48,15 @@ rescale_variables <- TRUE  # whether to rescale the numeric variables
 center_variables <- TRUE # whether to center numeric variables (except deltas)
 
 # Whether to use covariates in the model
-use_covariates <- FALSE
+use_covariates <- TRUE
 
-## Load children's data
-dat_compt <- read.csv("data_main_experiment_children.csv")
+###### Load children's data ###### 
+setwd(children_wd)
+# dat_compt <- read.csv("data_main_experiment_children.csv")
+dat_compt <- read.csv("trials.csv")
 dat_compt <- subset(dat_compt, !(condition %in% c("catch_1", "catch_2")))
-dat_compt <- subset(dat_compt, !(age_in_years == 13))
+dat_compt <- subset(dat_compt, !(age_in_years < 4))
 dat_compt <- subset(dat_compt, catch_trials_score == 100)
-dat_compt <- subset(dat_compt, wob > 0.5)
-
-# Remove subjects for which individual fits did not converge
-#dat_compt <- subset(dat_compt, ! dat_compt$subject_ID %in% c(3668306, 3898310, 3977620, 3981226))
-
-# Remove subjects whose uncertainty coefficient was very low
-#dat_compt <- subset(dat_compt, ! dat_compt$subject_ID %in% c(3802897, 3827089, 3644967))
 
 # Create age groups
 dat_compt$age_group <- "None"
@@ -216,11 +213,12 @@ if (rescale_variables) {
   dat_compt_10_12 <- rescale_deltas(dat_compt_10_12) 
 }
 
-## Load adults' data
-setwd(wd)
-adu_dat_compt <- read.csv("data_main_experiment_adults.csv")
+###### Load adults' data ###### 
+setwd(adults_wd)
+# adu_dat_compt <- read.csv("data_main_experiment_adults.csv")
+adu_dat_compt <- read.csv("trials.csv")
 adu_dat_compt <- subset(adu_dat_compt, !(condition %in% c("catch_1", "catch_2")))
-adu_dat_compt <- subset(adu_dat_compt, (catch_trials_score == 100) & (wob > 0.5))
+adu_dat_compt <- subset(adu_dat_compt, catch_trials_score == 100)
 
 # Fix trial number
 adu_dat_compt$trial_number <- substr(adu_dat_compt$condition, 7, 8)
@@ -282,16 +280,16 @@ if (rescale_variables) {adu_dat_compt <- rescale_deltas(adu_dat_compt)}
 # Check rescaled and raw deltas have the same sign (adults)
 check_delta_signs(adu_dat_compt)
 
-## Merged datasets (children + adults)
+###### Merged datasets (children + adults) ######
 # Create data subsets
-cols <- c("subject_ID", "info_choice", 
+cols <- c("subject_ID", "info_choice", "trial_number",
           "delta_EV", "delta_uncertainty_level", "delta_agency", 
           "delta_EV_non_Z", "delta_uncertainty_level_non_Z", "delta_agency_non_Z", 
           "EV_L", "EV_R", "uncertainty_level_L", "uncertainty_level_R",
-          "agency_probL", "agency_probR",
+          "agency_probL", "agency_probR", "gender",
           "gender_coded", "wob", "percent_comprehension", 
           "wob_non_Z", "percent_comprehension_non_Z", 
-          "age_group", "age_group_coded",
+          "age_group", "age_group_coded", "age_in_years_non_Z",
           "fishing_non_Z")
 dat_compt_child_adu <- rbind(dplyr::select(dat_compt, all_of(cols)), 
                              dplyr::select(adu_dat_compt, all_of(cols)))
@@ -307,6 +305,10 @@ dat_compt_10_12_adu <- rbind(dplyr::select(dat_compt_10_12, all_of(cols)),
 
 # Rescale variables
 if (rescale_variables) {
+  dat_compt_child_adu$age_in_years <- scale(dat_compt_child_adu$age_in_years_non_Z, center=center_variables)
+  dat_compt_4_5_adu$age_in_years <- scale(dat_compt_4_5_adu$age_in_years_non_Z, center=center_variables)
+  dat_compt_6_7_adu$age_in_years <- scale(dat_compt_6_7_adu$age_in_years_non_Z, center=center_variables)
+  dat_compt_8_9_adu$age_in_years <- scale(dat_compt_8_9_adu$age_in_years_non_Z, center=center_variables)
   dat_compt_child_adu$percent_comprehension <- scale(dat_compt_child_adu$percent_comprehension_non_Z, center=center_variables)
   dat_compt_4_5_adu$percent_comprehension <- scale(dat_compt_4_5_adu$percent_comprehension_non_Z, center=center_variables)
   dat_compt_6_7_adu$percent_comprehension <- scale(dat_compt_6_7_adu$percent_comprehension_non_Z, center=center_variables)
@@ -338,11 +340,34 @@ dat_compt_6_7_adu$group <-  ifelse(dat_compt_6_7_adu$age_group_coded == 4, 1, -1
 dat_compt_8_9_adu$group <-  ifelse(dat_compt_8_9_adu$age_group_coded == 4, 1, -1) # -1 = child, 1 = adult
 dat_compt_10_12_adu$group <-  ifelse(dat_compt_10_12_adu$age_group_coded == 4, 1, -1) # -1 = child, 1 = adult
 
+dat_compt_child_adu$age_group_coded_ctr <- scale(as.numeric(dat_compt_child_adu$age_group_coded), scale=FALSE, center=TRUE)
+
+
+# Create new variable for age -- linear for children + extra variable for adults
+dat_compt_child_adu$age_factor <- factor(ifelse(dat_compt_child_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z),
+                                            labels=c("4", "5", "6", "7", "8", "9", "10","11", "12", "18+"), levels=c(4, 5, 6, 7, 8, 9, 10, 11, 12, 13))
+dat_compt_4_5_adu$age_factor <- factor(ifelse(dat_compt_4_5_adu$age_group_coded == 4,  13, dat_compt_child_adu$age_in_years_non_Z),
+                                       labels=c("4", "5", "6", "7", "8", "9", "10","11", "12", "18+"), levels=c(4, 5, 6, 7, 8, 9, 10, 11, 12, 13))
+dat_compt_6_7_adu$age_factor <-  factor(ifelse(dat_compt_6_7_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z),
+                                        labels=c("4", "5", "6", "7", "8", "9", "10","11", "12", "18+"), levels=c(4, 5, 6, 7, 8, 9, 10, 11, 12, 13))
+dat_compt_8_9_adu$age_factor <-  factor(ifelse(dat_compt_8_9_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z),
+                                        labels=c("4", "5", "6", "7", "8", "9", "10","11", "12", "18+"), levels=c(4, 5, 6, 7, 8, 9, 10, 11, 12, 13))
+dat_compt_10_12_adu$age_factor <-  factor(ifelse(dat_compt_10_12_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z),
+                                          labels=c("4", "5", "6", "7", "8", "9", "10","11", "12", "18+"), levels=c(4, 5, 6, 7, 8, 9, 10, 11, 12, 13))
+dat_compt_child_adu$age2 <- ifelse(dat_compt_child_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z)
+dat_compt_4_5_adu$age2 <- ifelse(dat_compt_4_5_adu$age_group_coded == 4,  13, dat_compt_child_adu$age_in_years_non_Z)
+dat_compt_6_7_adu$age2 <- ifelse(dat_compt_6_7_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z)
+dat_compt_8_9_adu$age2 <-  ifelse(dat_compt_8_9_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z)
+dat_compt_10_12_adu$age2 <-  ifelse(dat_compt_10_12_adu$age_group_coded == 4, 13, dat_compt_child_adu$age_in_years_non_Z)
+
+
 #### Demographics ####
 summary(subset(dat_compt, trial_number==1)$age_in_years_non_Z)
 sdamr::sample_sd(subset(dat_compt, trial_number==1)$age_in_years_non_Z)
 psych::describeBy(subset(dat_compt, trial_number==1)$age_in_years_non_Z, 
                   subset(dat_compt, trial_number==1)$age_group)
+table(subset(dat_compt, trial_number==1)$age_group)
+table(subset(dat_compt, trial_number==1)$age_in_years_non_Z)
 table(subset(dat_compt, trial_number==1)$gender)
 table(subset(dat_compt, trial_number==1)$gender, 
       subset(dat_compt, trial_number==1)$age_group)
@@ -350,6 +375,12 @@ psych::describeBy(subset(adu_dat_compt, trial_number==1)$age_in_years_non_Z,
                   subset(adu_dat_compt, trial_number==1)$age_group)
 table(subset(adu_dat_compt, trial_number==1)$gender, 
       subset(adu_dat_compt, trial_number==1)$age_group)
+table1::table1(~ gender + age_in_years_non_Z + percent_comprehension_non_Z + 
+                 wob_non_Z + fishing_non_Z | age_group, 
+               data=subset(dat_compt_child_adu, dat_compt_child_adu$trial_number == 1))
+table1::table1(~ gender + age_in_years_non_Z + percent_comprehension_non_Z + 
+                 wob_non_Z + fishing_non_Z | age_group, 
+               data=subset(dat_compt, dat_compt$trial_number == 1))
 
 #### Comprehension and wob scores ####
 ## t-tests
@@ -360,16 +391,12 @@ t.test(subset(dat_compt_6_7, trial_number ==1)$wob_non_Z, mu=0.5, var.equal=TRUE
 t.test(subset(dat_compt_8_9, trial_number ==1)$wob_non_Z, mu=0.5, var.equal=TRUE)
 t.test(subset(dat_compt_10_12, trial_number ==1)$wob_non_Z, mu=0.5, var.equal=TRUE)
 
-# Standard deviations
-sdamr::sample_sd(subset(dat_compt, trial_number ==1)$percent_comprehension_non_Z)
-sdamr::sample_sd(subset(adu_dat_compt, trial_number ==1)$percent_comprehension_non_Z)
-sdamr::sample_sd(subset(dat_compt, trial_number ==1)$wob_non_Z)
-sdamr::sample_sd(subset(adu_dat_compt, trial_number ==1)$wob_non_Z)
-
 # Descriptive stats by age group
 psych::describeBy(subset(dat_compt, trial_number==1)$percent_comprehension_non_Z, 
                   subset(dat_compt, trial_number==1)$age_group)
 psych::describeBy(subset(dat_compt, trial_number==1)$wob_non_Z, 
+                  subset(dat_compt, trial_number==1)$age_group)
+psych::describeBy(subset(dat_compt, trial_number==1)$fishing_non_Z, 
                   subset(dat_compt, trial_number==1)$age_group)
 
 ## Create long form data sets
@@ -469,6 +496,7 @@ dat_compt_child_adu_pc_wob$variable3 <- factor(dat_compt_child_adu_pc_wob$variab
 table(dat_compt_child_adu_pc_wob$variable3)
 
 ## Plots
+x_labels <- c("4-5", "6-7", "8-9", "10-12", "18+")
 # By group
 compt_pc_by_group <- ggplot(subset(dat_compt_child_adu_pc_wob, variable2 %in% 
                                      c("percent_comprehension_child", "percent_comprehension_adu")), 
@@ -477,13 +505,15 @@ compt_pc_by_group <- ggplot(subset(dat_compt_child_adu_pc_wob, variable2 %in%
                                        variable2 %in% c("percent_comprehension_child", "percent_comprehension_adu"))$color,
               size=1.5, alpha=0.9)+   
   geom_violin(alpha=0.3) +
-  scale_y_continuous(breaks=seq(0,1,0.25), limits=c(0, 1)) + 
+  scale_y_continuous(breaks=seq(0,1,0.25), limits=c(0, 1)) +
+  scale_x_discrete(labels=x_labels) + 
   scale_fill_manual(values=c("#AAAAAA", "#444444")) +
   #stat_summary(fun=mean, geom="point", shape=20, size=4, color="black", fill="black") +
-  theme_classic() + labs(x="comprehension", y="Score") + 
+  theme_classic() + labs(x="Age group", y="Proportion correct answers \nin the instructions comprehension") + 
   theme(legend.position="none", plot.margin=margin(0, 0, 0, 0, "cm")) +
-  theme(axis.text.x = element_text(size=12)) +
-  theme(axis.text.y = element_text(size=12))
+  theme(text = element_text(size=14), legend.position="none") +
+  theme(axis.text.x = element_text(size=14)) +
+  theme(axis.text.y = element_text(size=14))
 
 compt_wob_by_group <- ggplot(subset(dat_compt_child_adu_pc_wob, variable2 %in% 
                                       c("wob_child", "wob_adu")), 
@@ -492,14 +522,16 @@ compt_wob_by_group <- ggplot(subset(dat_compt_child_adu_pc_wob, variable2 %in%
                                        variable2 %in% c("wob_child", "wob_adu"))$color,
               size=1.5, alpha=0.9)+   
   geom_violin(alpha=0.3) +
-  geom_hline(yintercept=0.5, color="#AAAAAA") +
+  geom_hline(yintercept=0.5, linetype="dashed") +
+  scale_x_discrete(labels=x_labels) + 
   scale_y_continuous(breaks=seq(0,1,0.25), limits=c(0, 1)) + 
   scale_fill_manual(values=c("#AAAAAA", "#444444")) +
   #stat_summary(fun=mean, geom="point", shape=20, size=4, color="black", fill="black") +
-  theme_classic() + labs(x="comprehension", y="Score") + 
+  theme_classic() + labs(x="Age group", y="Proportion correct answers \nin the EV comparisons task") + 
   theme(legend.position="none", plot.margin=margin(0, 0, 0, 0, "cm")) +
-  theme(axis.text.x = element_text(size=12)) +
-  theme(axis.text.y = element_text(size=12))
+  theme(text = element_text(size=14), legend.position="none") +
+  theme(axis.text.x = element_text(size=14)) +
+  theme(axis.text.y = element_text(size=14))
 
 grid.arrange(compt_pc_by_group, compt_wob_by_group, ncol=2)
 
@@ -509,28 +541,22 @@ grid.arrange(compt_pc_by_group, compt_wob_by_group, ncol=2)
 
 # Overall fishing choices compared to chance and children vs adults
 # based on what participants see
-sdamr::sample_sd(subset(dat_compt, trial_number == 1)$fishing_non_Z)
 t.test(subset(adu_dat_compt, trial_number == 1)$fishing_non_Z, 
        mu=0.5, var.equal=TRUE)
-sdamr::sample_sd(subset(adu_dat_compt, trial_number == 1)$fishing_non_Z)
 t.test(subset(dat_compt, trial_number == 1 & age_group_coded == 0)$fishing_non_Z, 
        mu=0.5, var.equal=TRUE)
-sdamr::sample_sd(subset(dat_compt, trial_number == 1 & age_group_coded == 0)$fishing_non_Z)
 t.test(subset(dat_compt, trial_number == 1 & age_group_coded == 1)$fishing_non_Z, 
        mu=0.5, var.equal=TRUE)
-sdamr::sample_sd(subset(dat_compt, trial_number == 1 & age_group_coded == 1)$fishing_non_Z)
 t.test(subset(dat_compt, trial_number == 1 & age_group_coded == 2)$fishing_non_Z, 
        mu=0.5, var.equal=TRUE)
-sdamr::sample_sd(subset(dat_compt, trial_number == 1 & age_group_coded == 2)$fishing_non_Z)
 t.test(subset(dat_compt, trial_number == 1 & age_group_coded == 3)$fishing_non_Z, 
        mu=0.5, var.equal=TRUE)
-sdamr::sample_sd(subset(dat_compt, trial_number == 1 & age_group_coded == 3)$fishing_non_Z)
 
 # Plot average scores by age group
 # Create dataset for fishing choices
-age_group <- factor(c("4-5", "6-7", "8-9", "10-12", "Adults"), levels=c("4-5", "6-7", "8-9", "10-12", "Adults"))
+age_group <- factor(c("4-5", "6-7", "8-9", "10-12", "18+"), levels=c("4-5", "6-7", "8-9", "10-12", "Adults"))
 x_points <- c(0.1, 0.2, 0.3, 0.4, 0.5)
-x_labels <- c("4-5", "6-7", "8-9", "10-12", "Adults")
+x_labels <- c("4-5", "6-7", "8-9", "10-12", "18+")
 
 # based on what participants see
 fishing <- c(
@@ -557,15 +583,18 @@ fishing_choices_by_group_plot <- ggplot(fishing_choices_dat_by_group) +
   geom_ribbon(aes(ymin=fishing-fishing_sem, 
                   ymax=fishing+fishing_sem, 
                   x=x_points), fill="darkgrey" , alpha = 0.3)+
-  theme_classic()+
-  theme(text = element_text(size=16), legend.position="none") +
-  scale_x_continuous(labels=fishing_choices_dat_by_group$x_labels) +
+  
+  scale_x_continuous(labels=x_labels) +
   scale_y_continuous(limits=c(0, 1), breaks=seq(0, 1, 0.25)) +
-  theme(axis.text.x = element_text(size=16)) +
-  theme(axis.text.y = element_text(size=16)) +
-  geom_hline(yintercept=0.5) +
-  labs(x="Age group", y="Correct fishing choices\n(based on what participants see)")
+  theme_classic() +
+  theme(text = element_text(size=14), legend.position="none") +
+  theme(axis.text.x = element_text(size=14)) +
+  theme(axis.text.y = element_text(size=14)) +
+  geom_hline(yintercept=0.5, linetype="dashed") +
+  labs(x="Age group", y="Correct fishing choices")
 
+grid.arrange(compt_pc_by_group, compt_wob_by_group, fishing_choices_by_group_plot, ncol=3)
+# 920, 340
 
 #### Correlations between deltas ####
 corr_variables <- c("delta_EV", "delta_SD", "delta_uncertainty_level", "delta_agency")
@@ -582,6 +611,575 @@ adu_dat_compt_p_mat <- ggcorrplot::cor_pmat(adu_dat_compt_corr)
 ggcorrplot(adu_dat_compt_corr_mat, outline.col = "white", lab = TRUE, insig = "blank")
 adu_dat_compt_corr_mat 
 adu_dat_compt_p_mat
+
+#### Models of children vs adults ####
+# if (use_covariates) {
+if (TRUE) {
+  # USING COVARIATES
+  # Children vs adults
+  # Full
+  compt_mod_child_adu <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                 percent_comprehension + wob + gender_coded + group + 
+                                 group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                 (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                               data = dat_compt_child_adu, family = binomial, 
+                               control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and EV
+  compt_mod_child_adu_drop_Af_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_child_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and uncertainty
+  compt_mod_child_adu_drop_C_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                            percent_comprehension + wob + gender_coded + group + 
+                                            group:delta_EV + group:delta_agency +
+                                            (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                          data = dat_compt_child_adu, family = binomial, 
+                                          control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and agency
+  compt_mod_child_adu_drop_Ac_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_child_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop EV fixed
+  compt_mod_child_adu_drop_Af_fixed <- glmer(info_choice ~  delta_uncertainty_level + delta_agency +
+                                               percent_comprehension + wob + gender_coded + group + 
+                                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_child_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+  # Drop uncertainty fixed
+  compt_mod_child_adu_drop_C_fixed <- glmer(info_choice ~ delta_EV + delta_agency +
+                                              percent_comprehension + wob + gender_coded + group + 
+                                              group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                              (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                            data = dat_compt_child_adu, family = binomial, 
+                                            control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop agency fixed
+  compt_mod_child_adu_drop_Ac_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level +
+                                               percent_comprehension + wob + gender_coded + group + 
+                                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_child_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop comprehension fixed
+  compt_mod_child_adu_drop_pc_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                               wob + gender_coded + group + 
+                                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_child_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop wob fixed
+  compt_mod_child_adu_drop_wob_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                percent_comprehension + gender_coded + group + 
+                                                group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                              data = dat_compt_child_adu, family = binomial, 
+                                              control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop gender fixed 
+  compt_mod_child_adu_drop_gender_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                   percent_comprehension + wob + group + 
+                                                   group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                   (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                                 data = dat_compt_child_adu, family = binomial, 
+                                                 control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop group fixed
+  compt_mod_child_adu_drop_group_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                  percent_comprehension + wob + gender_coded + 
+                                                  group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                  (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                                data = dat_compt_child_adu, family = binomial, 
+                                                control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+  ## Children vs adults with age_group_coded 
+  # Full
+  compt_mod_child_adu2 <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                 percent_comprehension + wob + gender_coded + age_group_coded_ctr + 
+                                 age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                 (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                               data = dat_compt_child_adu, family = binomial, 
+                               control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between age_group_coded_ctr and EV
+  compt_mod_child_adu2_drop_Af_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + age_group_coded_ctr + 
+                                             age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                              (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_child_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between age_group_coded_ctr and uncertainty
+  compt_mod_child_adu2_drop_C_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                            percent_comprehension + wob + gender_coded + age_group_coded_ctr + 
+                                            age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                          data = dat_compt_child_adu, family = binomial, 
+                                          control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between age_group_coded_ctr and agency
+  compt_mod_child_adu2_drop_Ac_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + age_group_coded_ctr + 
+                                             age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level +
+                                              (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_child_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop EV fixed
+  compt_mod_child_adu2_drop_Af_fixed <- glmer(info_choice ~  delta_uncertainty_level + delta_agency +
+                                               percent_comprehension + wob + gender_coded + age_group_coded_ctr + 
+                                               age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_child_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+  # Drop uncertainty fixed
+  compt_mod_child_adu2_drop_C_fixed <- glmer(info_choice ~ delta_EV + delta_agency +
+                                              percent_comprehension + wob + gender_coded + age_group_coded_ctr + 
+                                              age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                            data = dat_compt_child_adu, family = binomial, 
+                                            control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop agency fixed
+  compt_mod_child_adu2_drop_Ac_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level +
+                                               percent_comprehension + wob + gender_coded + age_group_coded_ctr + 
+                                               age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_child_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop comprehension fixed
+  compt_mod_child_adu2_drop_pc_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                               wob + gender_coded + age_group_coded_ctr + 
+                                               age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_child_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop wob fixed
+  compt_mod_child_adu2_drop_wob_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                percent_comprehension + gender_coded + age_group_coded_ctr + 
+                                                age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                                 (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                              data = dat_compt_child_adu, family = binomial, 
+                                              control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop gender fixed 
+  compt_mod_child_adu2_drop_gender_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                   percent_comprehension + wob + age_group_coded_ctr + 
+                                                   age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                                    (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                                 data = dat_compt_child_adu, family = binomial, 
+                                                 control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop age_group_coded_ctr fixed
+  compt_mod_child_adu2_drop_age_group_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                  percent_comprehension + wob + gender_coded + 
+                                                  age_group_coded_ctr:delta_EV + age_group_coded_ctr:delta_uncertainty_level + age_group_coded_ctr:delta_agency +
+                                                    (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                                data = dat_compt_child_adu, family = binomial, 
+                                                control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+  # # 4-5 year-olds
+  # Full
+  compt_mod_4_5_adu <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                               percent_comprehension + wob + gender_coded + group + 
+                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                             data = dat_compt_4_5_adu, family = binomial, 
+                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and EV
+  compt_mod_4_5_adu_drop_Af_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                           percent_comprehension + wob + gender_coded + group + 
+                                           group:delta_uncertainty_level + group:delta_agency +
+                                           (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                         data = dat_compt_4_5_adu, family = binomial, 
+                                         control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and uncertainty
+  compt_mod_4_5_adu_drop_C_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                          percent_comprehension + wob + gender_coded + group + 
+                                          group:delta_EV + group:delta_agency +
+                                          (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                        data = dat_compt_4_5_adu, family = binomial, 
+                                        control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and agency
+  compt_mod_4_5_adu_drop_Ac_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                           percent_comprehension + wob + gender_coded + group + 
+                                           group:delta_EV + group:delta_uncertainty_level +
+                                           (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                         data = dat_compt_4_5_adu, family = binomial, 
+                                         control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop EV fixed
+  compt_mod_4_5_adu_drop_Af_fixed <- glmer(info_choice ~  delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_4_5_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop uncertainty fixed
+  compt_mod_4_5_adu_drop_C_fixed <- glmer(info_choice ~ delta_EV + delta_agency +
+                                            percent_comprehension + wob + gender_coded + group + 
+                                            group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                            (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                          data = dat_compt_4_5_adu, family = binomial, 
+                                          control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop agency fixed
+  compt_mod_4_5_adu_drop_Ac_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_4_5_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop comprehension fixed
+  compt_mod_4_5_adu_drop_pc_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_4_5_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop wob fixed
+  compt_mod_4_5_adu_drop_wob_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                              percent_comprehension + gender_coded + group + 
+                                              group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                              (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                            data = dat_compt_4_5_adu, family = binomial, 
+                                            control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop gender fixed 
+  compt_mod_4_5_adu_drop_gender_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                 percent_comprehension + wob + group + 
+                                                 group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                 (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                               data = dat_compt_4_5_adu, family = binomial, 
+                                               control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop group fixed
+  compt_mod_4_5_adu_drop_group_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                percent_comprehension + wob + gender_coded + 
+                                                group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                              data = dat_compt_4_5_adu, family = binomial, 
+                                              control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+  # 6-7-year-olds
+  # Full
+  compt_mod_6_7_adu <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                               percent_comprehension + wob + gender_coded + group + 
+                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                             data = dat_compt_6_7_adu, family = binomial, 
+                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and EV
+  compt_mod_6_7_adu_drop_Af_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                           percent_comprehension + wob + gender_coded + group + 
+                                           group:delta_uncertainty_level + group:delta_agency +
+                                           (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                         data = dat_compt_6_7_adu, family = binomial, 
+                                         control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and uncertainty
+  compt_mod_6_7_adu_drop_C_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                          percent_comprehension + wob + gender_coded + group + 
+                                          group:delta_EV + group:delta_agency +
+                                          (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                        data = dat_compt_6_7_adu, family = binomial, 
+                                        control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and agency
+  compt_mod_6_7_adu_drop_Ac_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                           percent_comprehension + wob + gender_coded + group + 
+                                           group:delta_EV + group:delta_uncertainty_level +
+                                           (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                         data = dat_compt_6_7_adu, family = binomial, 
+                                         control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop EV fixed
+  compt_mod_6_7_adu_drop_Af_fixed <- glmer(info_choice ~  delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_6_7_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop uncertainty fixed
+  compt_mod_6_7_adu_drop_C_fixed <- glmer(info_choice ~ delta_EV + delta_agency +
+                                            percent_comprehension + wob + gender_coded + group + 
+                                            group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                            (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                          data = dat_compt_6_7_adu, family = binomial, 
+                                          control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop agency fixed
+  compt_mod_6_7_adu_drop_Ac_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_6_7_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop comprehension fixed
+  compt_mod_6_7_adu_drop_pc_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_6_7_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop wob fixed
+  compt_mod_6_7_adu_drop_wob_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                              percent_comprehension + gender_coded + group + 
+                                              group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                              (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                            data = dat_compt_6_7_adu, family = binomial, 
+                                            control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop gender fixed 
+  compt_mod_6_7_adu_drop_gender_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                 percent_comprehension + wob + group + 
+                                                 group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                 (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                               data = dat_compt_6_7_adu, family = binomial, 
+                                               control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop group fixed
+  compt_mod_6_7_adu_drop_group_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                percent_comprehension + wob + gender_coded + 
+                                                group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                              data = dat_compt_6_7_adu, family = binomial, 
+                                              control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+  # 8-9-year-olds
+  # Full
+  compt_mod_8_9_adu <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                               percent_comprehension + wob + gender_coded + group + 
+                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                             data = dat_compt_8_9_adu, family = binomial, 
+                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and EV
+  compt_mod_8_9_adu_drop_Af_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                           percent_comprehension + wob + gender_coded + group + 
+                                           group:delta_uncertainty_level + group:delta_agency +
+                                           (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                         data = dat_compt_8_9_adu, family = binomial, 
+                                         control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and uncertainty
+  compt_mod_8_9_adu_drop_C_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                          percent_comprehension + wob + gender_coded + group + 
+                                          group:delta_EV + group:delta_agency +
+                                          (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                        data = dat_compt_8_9_adu, family = binomial, 
+                                        control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and agency
+  compt_mod_8_9_adu_drop_Ac_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                           percent_comprehension + wob + gender_coded + group + 
+                                           group:delta_EV + group:delta_uncertainty_level +
+                                           (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                         data = dat_compt_8_9_adu, family = binomial, 
+                                         control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop EV fixed
+  compt_mod_8_9_adu_drop_Af_fixed <- glmer(info_choice ~  delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_8_9_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop uncertainty fixed
+  compt_mod_8_9_adu_drop_C_fixed <- glmer(info_choice ~ delta_EV + delta_agency +
+                                            percent_comprehension + wob + gender_coded + group + 
+                                            group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                            (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                          data = dat_compt_8_9_adu, family = binomial, 
+                                          control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop agency fixed
+  compt_mod_8_9_adu_drop_Ac_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_8_9_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop comprehension fixed
+  compt_mod_8_9_adu_drop_pc_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_8_9_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop wob fixed
+  compt_mod_8_9_adu_drop_wob_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                              percent_comprehension + gender_coded + group + 
+                                              group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                              (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                            data = dat_compt_8_9_adu, family = binomial, 
+                                            control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop gender fixed 
+  compt_mod_8_9_adu_drop_gender_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                 percent_comprehension + wob + group + 
+                                                 group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                 (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                               data = dat_compt_8_9_adu, family = binomial, 
+                                               control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop group fixed
+  compt_mod_8_9_adu_drop_group_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                percent_comprehension + wob + gender_coded + 
+                                                group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                              data = dat_compt_8_9_adu, family = binomial, 
+                                              control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+  # 10-12 year-olds
+  # Full
+  compt_mod_10_12_adu <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                 percent_comprehension + wob + gender_coded + group + 
+                                 group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                 (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                               data = dat_compt_10_12_adu, family = binomial, 
+                               control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and EV
+  compt_mod_10_12_adu_drop_Af_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_uncertainty_level + group:delta_agency +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_10_12_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and uncertainty
+  compt_mod_10_12_adu_drop_C_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                            percent_comprehension + wob + gender_coded + group + 
+                                            group:delta_EV + group:delta_agency +
+                                            (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                          data = dat_compt_10_12_adu, family = binomial, 
+                                          control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop interaction between group and agency
+  compt_mod_10_12_adu_drop_Ac_int <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                             percent_comprehension + wob + gender_coded + group + 
+                                             group:delta_EV + group:delta_uncertainty_level +
+                                             (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                           data = dat_compt_10_12_adu, family = binomial, 
+                                           control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop EV fixed
+  compt_mod_10_12_adu_drop_Af_fixed <- glmer(info_choice ~  delta_uncertainty_level + delta_agency +
+                                               percent_comprehension + wob + gender_coded + group + 
+                                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_10_12_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop uncertainty fixed
+  compt_mod_10_12_adu_drop_C_fixed <- glmer(info_choice ~ delta_EV + delta_agency +
+                                              percent_comprehension + wob + gender_coded + group + 
+                                              group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                              (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                            data = dat_compt_10_12_adu, family = binomial, 
+                                            control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop agency fixed
+  compt_mod_10_12_adu_drop_Ac_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level +
+                                               percent_comprehension + wob + gender_coded + group + 
+                                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_10_12_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop comprehension fixed
+  compt_mod_10_12_adu_drop_pc_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                               wob + gender_coded + group + 
+                                               group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                               (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                             data = dat_compt_10_12_adu, family = binomial, 
+                                             control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop wob fixed
+  compt_mod_10_12_adu_drop_wob_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                percent_comprehension + gender_coded + group + 
+                                                group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                              data = dat_compt_10_12_adu, family = binomial, 
+                                              control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop gender fixed 
+  compt_mod_10_12_adu_drop_gender_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                   percent_comprehension + wob + group + 
+                                                   group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                   (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                                 data = dat_compt_10_12_adu, family = binomial, 
+                                                 control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  # Drop group fixed
+  compt_mod_10_12_adu_drop_group_fixed <- glmer(info_choice ~ delta_EV + delta_uncertainty_level + delta_agency +
+                                                  percent_comprehension + wob + gender_coded + 
+                                                  group:delta_EV + group:delta_uncertainty_level + group:delta_agency +
+                                                  (delta_EV + delta_uncertainty_level + delta_agency | subject_ID), 
+                                                data = dat_compt_10_12_adu, family = binomial, 
+                                                control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+  
+} 
+#else{
+# WITHOUT COVARIATES
+# }
+
+###### Significance tests between groups ###### 
+# Model results
+sjPlot::tab_model(compt_mod_child_adu, transform = NULL, auto.label = FALSE, show.stat = TRUE, show.ci=FALSE, show.se=TRUE)
+sjPlot::tab_model(compt_mod_child_adu2, transform = NULL, auto.label = FALSE, show.stat = TRUE, show.ci=FALSE, show.se=TRUE)
+sjPlot::tab_model(compt_mod_4_5_adu, transform = NULL, auto.label = FALSE, show.stat = TRUE, show.ci=FALSE, show.se=TRUE)
+sjPlot::tab_model(compt_mod_6_7_adu, transform = NULL, auto.label = FALSE, show.stat = TRUE, show.ci=FALSE, show.se=TRUE)
+sjPlot::tab_model(compt_mod_8_9_adu, transform = NULL, auto.label = FALSE, show.stat = TRUE,show.ci=FALSE, show.se=TRUE)
+sjPlot::tab_model(compt_mod_10_12_adu, transform = NULL, auto.label = FALSE, show.stat = TRUE, show.ci=FALSE, show.se=TRUE)
+
+## Test interactions
+# Children vs adults (using the "group" variable)
+test_child_adu_EV_int <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_Af_int, test="Chisq")
+test_child_adu_uncertainty_int <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_C_int, test="Chisq")
+test_child_adu_agency_int <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_Ac_int, test="Chisq")
+test_child_adu_EV_fixed <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_Af_fixed, test="Chisq")
+test_child_adu_uncertainty_fixed <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_C_fixed, test="Chisq")
+test_child_adu_agency_fixed <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_Ac_fixed, test="Chisq")
+test_child_adu_pc_fixed <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_pc_fixed, test="Chisq")
+test_child_adu_wob_fixed <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_wob_fixed, test="Chisq")
+test_child_adu_gender_fixed <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_gender_fixed, test="Chisq")
+test_child_adu_group_fixed <- anova(compt_mod_child_adu, compt_mod_child_adu_drop_group_fixed, test="Chisq")
+
+# Children vs adults 2 (using the "age group coded" variable as continuous)
+test_child_adu2_EV_int <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_Af_int, test="Chisq")
+test_child_adu2_uncertainty_int <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_C_int, test="Chisq")
+test_child_adu2_agency_int <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_Ac_int, test="Chisq")
+test_child_adu2_EV_fixed <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_Af_fixed, test="Chisq")
+test_child_adu2_uncertainty_fixed <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_C_fixed, test="Chisq")
+test_child_adu2_agency_fixed <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_Ac_fixed, test="Chisq")
+test_child_adu2_pc_fixed <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_pc_fixed, test="Chisq")
+test_child_adu2_wob_fixed <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_wob_fixed, test="Chisq")
+test_child_adu2_gender_fixed <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_gender_fixed, test="Chisq")
+test_child_adu2_age_group_fixed <- anova(compt_mod_child_adu2, compt_mod_child_adu2_drop_age_group_fixed, test="Chisq")
+
+
+# 4-5 versus adults
+test_4_5_adu_EV_int <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_Af_int, test="Chisq")
+test_4_5_adu_uncertainty_int <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_C_int, test="Chisq")
+test_4_5_adu_agency_int <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_Ac_int, test="Chisq")
+test_4_5_adu_EV_fixed <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_Af_fixed, test="Chisq")
+test_4_5_adu_uncertainty_fixed <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_C_fixed, test="Chisq")
+test_4_5_adu_agency_fixed <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_Ac_fixed, test="Chisq")
+test_4_5_adu_pc_fixed <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_pc_fixed, test="Chisq")
+test_4_5_adu_wob_fixed <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_wob_fixed, test="Chisq")
+test_4_5_adu_gender_fixed <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_gender_fixed, test="Chisq")
+test_4_5_adu_group_fixed <- anova(compt_mod_4_5_adu, compt_mod_4_5_adu_drop_group_fixed, test="Chisq")
+
+# 6-7 versus adults
+test_6_7_adu_EV_int <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_Af_int, test="Chisq")
+test_6_7_adu_uncertainty_int <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_C_int, test="Chisq")
+test_6_7_adu_agency_int <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_Ac_int, test="Chisq")
+test_6_7_adu_EV_fixed <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_Af_fixed, test="Chisq")
+test_6_7_adu_uncertainty_fixed <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_C_fixed, test="Chisq")
+test_6_7_adu_agency_fixed <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_Ac_fixed, test="Chisq")
+test_6_7_adu_pc_fixed <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_pc_fixed, test="Chisq")
+test_6_7_adu_wob_fixed <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_wob_fixed, test="Chisq")
+test_6_7_adu_gender_fixed <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_gender_fixed, test="Chisq")
+test_6_7_adu_group_fixed <- anova(compt_mod_6_7_adu, compt_mod_6_7_adu_drop_group_fixed, test="Chisq")
+
+# 8-9 versus adults
+test_8_9_adu_EV_int <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_Af_int, test="Chisq")
+test_8_9_adu_uncertainty_int <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_C_int, test="Chisq")
+test_8_9_adu_agency_int <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_Ac_int, test="Chisq")
+test_8_9_adu_EV_fixed <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_Af_fixed, test="Chisq")
+test_8_9_adu_uncertainty_fixed <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_C_fixed, test="Chisq")
+test_8_9_adu_agency_fixed <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_Ac_fixed, test="Chisq")
+test_8_9_adu_pc_fixed <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_pc_fixed, test="Chisq")
+test_8_9_adu_wob_fixed <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_wob_fixed, test="Chisq")
+test_8_9_adu_gender_fixed <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_gender_fixed, test="Chisq")
+test_8_9_adu_group_fixed <- anova(compt_mod_8_9_adu, compt_mod_8_9_adu_drop_group_fixed, test="Chisq")
+
+# 10-12 versus adults
+test_10_12_adu_EV_int <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_Af_int, test="Chisq")
+test_10_12_adu_uncertainty_int <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_C_int, test="Chisq")
+test_10_12_adu_agency_int <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_Ac_int, test="Chisq")
+test_10_12_adu_EV_fixed <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_Af_fixed, test="Chisq")
+test_10_12_adu_uncertainty_fixed <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_C_fixed, test="Chisq")
+test_10_12_adu_agency_fixed <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_Ac_fixed, test="Chisq")
+test_10_12_adu_pc_fixed <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_pc_fixed, test="Chisq")
+test_10_12_adu_wob_fixed <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_wob_fixed, test="Chisq")
+test_10_12_adu_gender_fixed <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_gender_fixed, test="Chisq")
+test_10_12_adu_group_fixed <- anova(compt_mod_10_12_adu, compt_mod_10_12_adu_drop_group_fixed, test="Chisq")
+
 
 ####  Models by age group #### 
 if (use_covariates) {
@@ -1653,18 +2251,9 @@ if (use_covariates) {
                                                data = dat_compt_10_12, family = binomial, control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
 } # End of if/else statement for using covariates or not  
 
-#### Significance tests within groups ####
+###### Significance tests within groups ###### 
 # (within single groups)
 # access results of test a with a$Chisq, a$Df, a$Pr[2]
-
-## Adults overall
-adu_test_fixed_EV <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_Af_fixed, test="Chisq")
-adu_test_fixed_uncertainty <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_C_fixed, test="Chisq")
-adu_test_fixed_agency <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_Ac_fixed, test="Chisq")
-# covariates
-adu_test_fixed_pc <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_pc_fixed, test="Chisq")
-adu_test_fixed_wob <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_wob_fixed, test="Chisq")
-adu_test_fixed_gender <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_gender_fixed, test="Chisq")
 
 ## 4-5
 test_fixed_4_5_EV <- anova(compt_mod_4_5_full, compt_mod_4_5_full_drop_Af_fixed, test="Chisq")
@@ -1702,7 +2291,17 @@ test_fixed_10_12_pc <- anova(compt_mod_10_12_full, compt_mod_10_12_full_drop_pc_
 test_fixed_10_12_wob <- anova(compt_mod_10_12_full, compt_mod_10_12_full_drop_wob_fixed, test="Chisq")
 test_fixed_10_12_gender <- anova(compt_mod_10_12_full, compt_mod_10_12_full_drop_gender_fixed, test="Chisq")
 
-#### Betas plots #### 
+## Adults
+adu_test_fixed_EV <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_Af_fixed, test="Chisq")
+adu_test_fixed_uncertainty <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_C_fixed, test="Chisq")
+adu_test_fixed_agency <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_Ac_fixed, test="Chisq")
+# covariates
+adu_test_fixed_pc <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_pc_fixed, test="Chisq")
+adu_test_fixed_wob <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_wob_fixed, test="Chisq")
+adu_test_fixed_gender <- anova(adu_compt_mod_full, adu_compt_mod_full_drop_gender_fixed, test="Chisq")
+
+
+###### Betas plots ###### 
 # Create betas plots
 # Divided by age group
 compt_hedonic_beta_by_group <- c(summary(compt_mod_4_5_full)$coefficients[2], summary(compt_mod_6_7_full)$coefficients[2], summary(compt_mod_8_9_full)$coefficients[2], summary(compt_mod_10_12_full)$coefficients[2], summary(adu_compt_mod_full)$coefficients[2])
@@ -1754,7 +2353,7 @@ cognitive_color_by_group <- c("#377EB8", "#377EB8", "#377EB8", "#377EB8", "#377E
 instrumental_color_by_group <- c("#4DAF4A", "#4DAF4A", "#4DAF4A", "#4DAF4A", "#4DAF4A")
 intercept_color_by_group <- c("#808080", "#808080", "#808080", "#808080", "#808080")
 x_points <- c(0.1, 0.2, 0.3, 0.4, 0.5)
-x_labels <- c("4-5", "6-7", "8-9", "10-12", "Adults")
+x_labels <- c("4-5", "6-7", "8-9", "10-12", "18+")
 
 compt_betas_dat_by_group <- data.frame(compt_hedonic_beta_by_group, compt_cognitive_beta_by_group, compt_instrumental_beta_by_group, compt_intercept_beta_by_group,
                                        compt_hedonic_sem_lower_by_group, compt_cognitive_sem_lower_by_group, compt_instrumental_sem_lower_by_group, compt_intercept_sem_lower_by_group,
@@ -1788,7 +2387,7 @@ compt_hedonic_betas_by_group <- ggplot(compt_betas_dat_by_group) +
   scale_y_continuous(limits=hedonic_limits, breaks=hedonic_breaks) +
   theme(axis.text.x = element_text(size=16)) +
   theme(axis.text.y = element_text(size=16)) +
-  labs(x="Age group", y="Standardized beta EV") +
+  labs(x="Age group", y="β predicting\ninformation-seeking from EV") +
   geom_hline(yintercept=0)
 
 compt_cognitive_betas_by_group <- ggplot(compt_betas_dat_by_group) + 
@@ -1803,7 +2402,7 @@ compt_cognitive_betas_by_group <- ggplot(compt_betas_dat_by_group) +
   scale_y_continuous(limits=cognitive_limits, breaks=cognitive_breaks) +
   theme(axis.text.x = element_text(size=16)) +
   theme(axis.text.y = element_text(size=16)) +
-  labs(x="Age group", y="Standardized beta Uncertainty") +
+  labs(x="Age group", y="β predicting\ninformation-seeking from uncertainty") +
   geom_hline(yintercept=0)
 
 compt_instrumental_betas_by_group <- ggplot(compt_betas_dat_by_group) + 
@@ -1818,223 +2417,70 @@ compt_instrumental_betas_by_group <- ggplot(compt_betas_dat_by_group) +
   scale_y_continuous(limits=instrumental_limits, breaks=instrumental_breaks) +
   theme(axis.text.x = element_text(size=16)) +
   theme(axis.text.y = element_text(size=16)) +
-  labs(x="Age group", y="Standardized beta Agency") +
+  labs(x="Age group", y="β predicting\ninformation-seeking from agency") +
   geom_hline(yintercept=0)
 
 grid.arrange(compt_hedonic_betas_by_group, compt_cognitive_betas_by_group, compt_instrumental_betas_by_group, ncol=3)
+grid.arrange(compt_hedonic_betas_by_group, compt_instrumental_betas_by_group, compt_cognitive_betas_by_group, ncol=3)
+# 1000, 380
 
-#### Individual fits ####
-exclude_outliers <- FALSE
-outlier_sd <- 3 # after how many sds consider an outlier
-outlier_iqr <- 1 # after how many iqrs consider an outlier
-## Children
-id <- c()
-for (i in unique(dat_compt$subject_ID)) {id <- append(id, i)}
-age_group <- c()
-age <- c()
-pc <- c()
-wob <- c()
-gender <- c()
-coeff_intercept_sbj <- c()
-coeff_EV_sbj<-c()
-coeff_uncertainty_sbj <- c()
-coeff_agency_sbj <- c()
-AIC_sbj <- c()
-BIC_sbj <- c()
-exclude_ids <- c()
+# Children relative to adults
+compt_hedonic_betas_by_group_minus_adu <- ggplot(compt_betas_dat_by_group) + 
+  geom_line(aes(y=compt_hedonic_beta_by_group-compt_hedonic_beta_by_group[5], 
+                x=x_points, colour = hedonic_color_by_group), size=1)+
+  geom_point(aes(y=compt_hedonic_beta_by_group-compt_hedonic_beta_by_group[5], 
+                 x=x_points, colour = hedonic_color_by_group), size = 4)+
+  geom_ribbon(aes(ymin=compt_hedonic_sem_lower_by_group-compt_hedonic_beta_by_group[5], 
+                  ymax=compt_hedonic_sem_upper_by_group-compt_hedonic_beta_by_group[5], 
+                  x=x_points, fill = "band"), alpha = 0.3)+
+  scale_colour_manual("",values=compt_betas_dat_by_group$hedonic_color_by_group)+
+  scale_fill_manual("",values=compt_betas_dat_by_group$hedonic_color_by_group) +
+  theme_classic()+
+  theme(text = element_text(size=16), legend.position="none") +
+  scale_x_continuous(labels=compt_betas_dat_by_group$x_labels) +
+  scale_y_continuous(limits=hedonic_limits-0.75, breaks=hedonic_breaks-0.75) +
+  theme(axis.text.x = element_text(size=16)) +
+  theme(axis.text.y = element_text(size=16)) +
+  labs(x="Age group", y="β predictinginformation-seeking \nfrom EV relative to adults") +
+  geom_hline(yintercept=0)
 
-for (i in seq_along(unique(dat_compt$subject_ID))) {
-  id_sbj <- unique(dat_compt$subject_ID)[i]
-  # organize in a data frame for subject = id_sbj
-  dat <- subset(dat_compt, dat_compt$subject_ID == id_sbj)
-  
-  # update model-independent values
-  age_group[i] <- dat$age_group[1]
-  age[i] <- dat$age_in_years_non_Z[1]
-  pc[i] <- dat$percent_comprehension_non_Z[1]
-  wob[i] <- dat$wob_non_Z[1]
-  gender[i] <- dat$gender[1]
-  
-  # logistic regression
-  dat$delta_EV <- scale(dat$delta_EV_non_Z, center=FALSE)
-  dat$delta_uncertainty_level <- scale(dat$delta_uncertainty_level_non_Z, center=FALSE)
-  dat$delta_agency <- scale(dat$delta_agency_non_Z, center=FALSE)
-  
-  model <- glm(data=dat, info_choice ~ delta_EV + 
-                 delta_uncertainty_level + 
-                 delta_agency, family = "binomial", singular.ok=TRUE)
-  
-  coeff_intercept_sbj[i] <- model$coefficients[1]
-  coeff_EV_sbj[i] <- model$coefficients["delta_EV"]
-  coeff_uncertainty_sbj[i] <- model$coefficients["delta_uncertainty_level"]
-  coeff_agency_sbj[i] <- model$coefficients["delta_agency"]
-  
-  if (!model$converged) {
-    # print(paste(i, id_sbj, dat$age_group[1]))
-    # print(paste("EV coeff:", round(coeff_EV_sbj[i], 2), 
-    #             "uncertainty coeff:", round(coeff_uncertainty_sbj[i], 2),
-    #             "agency coeff:", round(coeff_agency_sbj[i], 2)))
-    # print(paste("EV ok:", ! glm(data=dat, info_choice ~ 
-    #                               delta_uncertainty_level + 
-    #                               delta_agency, family = "binomial", singular.ok=TRUE)$converged))
-    # print(paste("uncertainty ok:", ! glm(data=dat, info_choice ~ delta_EV + 
-    #                                        delta_agency, family = "binomial", singular.ok=TRUE)$converged))
-    # print(paste("agency ok:", ! glm(data=dat, info_choice ~ delta_EV + 
-    #                                   delta_uncertainty_level, 
-    #                                 family = "binomial", singular.ok=TRUE)$converged))
-    exclude_ids <- append(exclude_ids, id_sbj)
-  }
-  
-  
-  AIC_sbj[i]<- AIC(model)
-  BIC_sbj[i]<- BIC(model)
-  
-}
+compt_cognitive_betas_by_group_minus_adu <- ggplot(compt_betas_dat_by_group) + 
+  geom_line(aes(y=compt_cognitive_beta_by_group-compt_cognitive_beta_by_group[5], 
+                x=x_points, colour = cognitive_color_by_group), size=1)+
+  geom_point(aes(y=compt_cognitive_beta_by_group-compt_cognitive_beta_by_group[5], 
+                 x=x_points, colour = cognitive_color_by_group), size = 4)+
+  geom_ribbon(aes(ymin=compt_cognitive_sem_lower_by_group-compt_cognitive_beta_by_group[5], 
+                  ymax=compt_cognitive_sem_upper_by_group-compt_cognitive_beta_by_group[5],
+                  x=x_points, fill = "band"), alpha = 0.3)+
+  scale_colour_manual("",values=compt_betas_dat_by_group$cognitive_color_by_group)+
+  scale_fill_manual("",values=compt_betas_dat_by_group$cognitive_color_by_group) +
+  theme_classic()+
+  theme(text = element_text(size=15), legend.position="none") +
+  scale_x_continuous(labels=compt_betas_dat_by_group$x_labels) +
+  scale_y_continuous(limits=cognitive_limits-0.75, breaks=cognitive_breaks-0.75) +
+  theme(axis.text.x = element_text(size=16)) +
+  theme(axis.text.y = element_text(size=16)) +
+  labs(x="Age group", y="β predicting information-seeking \nfrom uncertainty relative to adults") +
+  geom_hline(yintercept=0)
 
-# create dataframe
-dat_compt_coeffs <- data.frame(id, age_group, age, pc, wob, gender, 
-                               coeff_intercept_sbj, coeff_EV_sbj, 
-                               coeff_uncertainty_sbj, coeff_agency_sbj, 
-                               AIC_sbj, BIC_sbj)
-dat_compt_coeffs$age_group <- factor(dat_compt_coeffs$age_group, 
-                                     labels=c("4-5", "6-7", "8-9", "10-12"))
-dat_compt_coeffs$age_group_coded <- "None"
-dat_compt_coeffs$age_group_coded[dat_compt_coeffs$age  %in% c(4, 5)] <- 0
-dat_compt_coeffs$age_group_coded[dat_compt_coeffs$age  %in% c(6, 7)] <- 1
-dat_compt_coeffs$age_group_coded[dat_compt_coeffs$age  %in% c(8, 9)] <- 2
-dat_compt_coeffs$age_group_coded[dat_compt_coeffs$age  %in% c(10, 11, 12)] <- 3
-#dat_compt_coeffs$age_group_coded <- factor(dat_compt_coeffs$age_group_coded, labels=c("4-5", "6-7", "8-9","10-12"))
-table(dat_compt_coeffs$age_group_coded)
-#contrasts(dat_compt_coeffs$age_group_coded) <- contr.helmert(4)
-dat_compt_coeffs$gender_coded <- as.factor(ifelse(dat_compt_coeffs$gender == "Male", 1, -1))
-contrasts(dat_compt_coeffs$gender_coded) <- contr.helmert(2)
-# exclude participants for which the model did not converge
-dat_compt_coeffs <- subset(dat_compt_coeffs, ! id %in% exclude_ids)
+compt_instrumental_betas_by_group_minus_adu <- ggplot(compt_betas_dat_by_group) + 
+  geom_line(aes(y=compt_instrumental_beta_by_group-compt_instrumental_beta_by_group[5],
+                x=x_points, colour = instrumental_color_by_group), size=1)+
+  geom_point(aes(y=compt_instrumental_beta_by_group-compt_instrumental_beta_by_group[5], x=x_points, 
+                 colour = instrumental_color_by_group), size = 4)+
+  geom_ribbon(aes(ymin=compt_instrumental_sem_lower_by_group-compt_instrumental_beta_by_group[5],
+                  ymax=compt_instrumental_sem_upper_by_group-compt_instrumental_beta_by_group[5],
+                  x=x_points, fill = "band"), alpha = 0.3)+
+  scale_colour_manual("",values=compt_betas_dat_by_group$instrumental_color_by_group)+
+  scale_fill_manual("",values=compt_betas_dat_by_group$instrumental_color_by_group) +
+  theme_classic()+
+  theme(text = element_text(size=15), legend.position="none") +
+  scale_x_continuous(labels=compt_betas_dat_by_group$x_labels) +
+  scale_y_continuous(limits=instrumental_limits-0.75, breaks=instrumental_breaks-0.75) +
+  theme(axis.text.x = element_text(size=16)) +
+  theme(axis.text.y = element_text(size=16)) +
+  labs(x="Age group", y="β predicting information-seeking \nfrom agency relative to adults") +
+  geom_hline(yintercept=0)
 
-## Adults
-id <- c()
-for (i in unique(adu_dat_compt$subject_ID)) {id <- append(id, i)}
-age_group <- c()
-age <- c()
-pc <- c()
-wob <- c()
-gender <- c()
-coeff_intercept_sbj <- c()
-coeff_EV_sbj<-c()
-coeff_uncertainty_sbj <- c()
-coeff_agency_sbj <- c()
-AIC_sbj <- c()
-BIC_sbj <- c()
-exclude_ids <- c()
-
-for (i in seq_along(unique(adu_dat_compt$subject_ID))) {
-  id_sbj <- unique(adu_dat_compt$subject_ID)[i]
-  # organize in a data frame for subject = id_sbj
-  dat <- subset(adu_dat_compt, adu_dat_compt$subject_ID == id_sbj)
-  
-  # update model-independent values
-  age_group[i] <- dat$age_group[1]
-  age[i] <- dat$age_in_years_non_Z[1]
-  pc[i] <- dat$percent_comprehension_non_Z[1]
-  wob[i] <- dat$wob_non_Z[1]
-  gender[i] <- dat$gender[1]
-  
-  # logistic regression
-  dat$delta_EV <- scale(dat$delta_EV_non_Z, center=FALSE)
-  dat$delta_uncertainty_level <- scale(dat$delta_uncertainty_level_non_Z, center=FALSE)
-  dat$delta_agency <- scale(dat$delta_agency_non_Z, center=FALSE)
-  
-  model <- glm(data=dat, info_choice ~ delta_EV + 
-                 delta_uncertainty_level + 
-                 delta_agency, family = "binomial", singular.ok=TRUE)
-  
-  coeff_intercept_sbj[i] <- model$coefficients[1]
-  coeff_EV_sbj[i] <- model$coefficients["delta_EV"]
-  coeff_uncertainty_sbj[i] <- model$coefficients["delta_uncertainty_level"]
-  coeff_agency_sbj[i] <- model$coefficients["delta_agency"]
-  
-  if (!model$converged) {
-    exclude_ids <- append(exclude_ids, id_sbj)
-  }
-  
-  
-  AIC_sbj[i]<- AIC(model)
-  BIC_sbj[i]<- BIC(model)
-  
-}
-
-# create dataframe
-adu_dat_compt_coeffs <- data.frame(id, age_group, age, pc, wob, gender, 
-                                   coeff_intercept_sbj, coeff_EV_sbj, 
-                                   coeff_uncertainty_sbj, coeff_agency_sbj, 
-                                   AIC_sbj, BIC_sbj)
-adu_dat_compt_coeffs$age_group_coded <- 4
-#contrasts(adu_dat_compt_coeffs$age_group_coded) <- contr.helmert(4)
-adu_dat_compt_coeffs$gender_coded <- as.factor(ifelse(adu_dat_compt_coeffs$gender == "Male", 1, -1))
-table(adu_dat_compt_coeffs$gender_coded)
-contrasts(adu_dat_compt_coeffs$gender_coded) <- contr.helmert(2)
-# exclude participants for which the model did not converge
-adu_dat_compt_coeffs <- subset(adu_dat_compt_coeffs, ! id %in% exclude_ids)
-
-# Merged dataframe
-cols <- c("id", "age_group", "age", "pc", "wob", "gender", 
-          "coeff_intercept_sbj", "coeff_EV_sbj", 
-          "coeff_uncertainty_sbj", "coeff_agency_sbj", 
-          "AIC_sbj", "BIC_sbj", "age_group_coded")
-dat_compt_coeffs_child_adu <- rbind(dplyr::select(dat_compt_coeffs, all_of(cols)), 
-                                    dplyr::select(adu_dat_compt_coeffs, all_of(cols)))
-
-
-## Plots
-compt_coeffs_EV_subj_violin_plot_by_group <- ggplot(dat_compt_coeffs_child_adu, aes(age_group_coded, coeff_EV_sbj)) +
-  geom_violin(fill="#E41A1C", alpha=0.2) + 
-  geom_point(color="#E41A1C") + 
-  geom_hline(yintercept=0, color="black") +
-  stat_summary(fun = "mean", geom = "crossbar", width = 0.25, color = "black") +
-  theme_classic() + 
-  labs(x="Age group", y="Delta EV coefficient") 
-
-# plot uncertainty coefficients
-compt_coeffs_uncertainty_subj_violin_plot_by_group <- ggplot(dat_compt_coeffs_child_adu, aes(age_group_coded, coeff_uncertainty_sbj)) +
-  geom_violin(fill="#377EB8", alpha=0.2) + 
-  geom_point(color="#377EB8") + 
-  geom_hline(yintercept=0, color="black") +
-  stat_summary(fun = "mean", geom = "crossbar", width = 0.25, color = "black") +
-  theme_classic() + 
-  labs(x="Age group", y="Delta uncertainty coefficient") 
-
-# plot agency coefficients
-compt_coeffs_agency_subj_violin_plot_by_group <- ggplot(dat_compt_coeffs_child_adu, aes(age_group_coded, coeff_agency_sbj)) +
-  geom_violin(fill="#4DAF4A", alpha=0.2) + 
-  geom_point(color="#4DAF4A") + 
-  geom_hline(yintercept=0, color="black") +
-  stat_summary(fun = "mean", geom = "crossbar", width = 0.25, color = "black") +
-  theme_classic() + 
-  labs(x="Age group", y="Delta agency coefficient") 
-
-
-grid.arrange(compt_coeffs_EV_subj_violin_plot_by_group, 
-             compt_coeffs_uncertainty_subj_violin_plot_by_group, 
-             compt_coeffs_agency_subj_violin_plot_by_group, ncol=3)
-
-# T-tests 
-test_EV_individual_4_5 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 0)$coeff_EV_sbj, mu=0)
-test_uncertainty_individual_4_5 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 0)$coeff_uncertainty_sbj, mu=0)
-test_agency_individual_4_5 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 0)$coeff_agency_sbj, mu=0)
-
-test_EV_individual_6_7 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 1)$coeff_EV_sbj, mu=0)
-test_uncertainty_individual_6_7 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 1)$coeff_uncertainty_sbj, mu=0)
-test_agency_individual_6_7 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 2)$coeff_agency_sbj, mu=0)
-
-test_EV_individual_8_9 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 2)$coeff_EV_sbj, mu=0)
-test_uncertainty_individual_8_9 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 2)$coeff_uncertainty_sbj, mu=0)
-test_agency_individual_8_9 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 2)$coeff_agency_sbj, mu=0)
-
-test_EV_individual_10_12 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 3)$coeff_EV_sbj, mu=0)
-test_uncertainty_individual_10_12 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 3)$coeff_uncertainty_sbj, mu=0)
-test_agency_individual_10_12 <- t.test(subset(dat_compt_coeffs, dat_compt_coeffs$age_group_coded == 3)$coeff_agency_sbj, mu=0)
-
-adu_test_EV_individual <- t.test(adu_dat_compt_coeffs$coeff_EV_sbj, mu=0)
-adu_test_uncertainty_individual <- t.test(adu_dat_compt_coeffs$coeff_uncertainty_sbj, mu=0)
-adu_test_agency_individual <- t.test(adu_dat_compt_coeffs$coeff_agency_sbj, mu=0)
-
+grid.arrange(compt_hedonic_betas_by_group_minus_adu, compt_cognitive_betas_by_group_minus_adu, 
+             compt_instrumental_betas_by_group_minus_adu, ncol=3)

@@ -1,12 +1,12 @@
 # AUTHOR: GAIA MOLINARO
 # Data analysis for supplementary experiment 1
-# in Molinaro, Cogliati Dezza, & Sharot (in prep.)
+# in Molinaro, Cogliati Dezza, Buehler, Moutsiana & Sharot (in prep.)
 
 # SET WORKING DIRECTORY
 wd = "insert_your_wd_here"
 
 #### LOAD REQUIRED PACKAGES #####
-packages <- c("psych", "optimx", "lme4")
+packages <- c("psych", "optimx")
 pacman::p_load(packages, character.only = TRUE)
 
 #### SUPPLEMENTARY EXPERIMENT 1 (INSTRUMENTAL UTILITY CONTROL) ####

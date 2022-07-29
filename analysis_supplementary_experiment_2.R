@@ -1,6 +1,6 @@
 # AUTHOR: GAIA MOLINARO
 # Data analysis for supplementary experiment 2
-# in Molinaro, Cogliati Dezza, & Sharot (in prep.)
+# in Molinaro, Cogliati Dezza, Buehler, Moutsiana & Sharot (in prep.)
 
 # CLEAR WORKSPACE
 rm(list = ls())
@@ -9,7 +9,7 @@ rm(list = ls())
 wd = "insert_your_wd_here"
 
 #### LOAD REQUIRED PACKAGES #####
-packages <- c("psych", "optimx", "lme4")
+packages <- c("psych", "optimx")
 pacman::p_load(packages, character.only = TRUE)
 
 
