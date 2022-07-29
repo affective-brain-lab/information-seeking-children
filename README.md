@@ -1,8 +1,8 @@
 # information-seeking-children
-Data and code from manuscript: Molinaro, Cogliati Dezza, &amp; Sharot (in prep.)
+Data and code from manuscript: Molinaro, Cogliati Dezza, Buehler, Moutsiana &amp; Sharot (in prep.)
 
 ## Data files
-### data_main_experiment_children.csv
+### data_main_experiment_children_1.csv (initial study) and data_main_experiment_children_2.csv (replication)
 Contains the following variables:
 * subject_ID: the participant's ID
 * age_in_years: the participant's age in years
@@ -44,7 +44,7 @@ Contains the following variables:
 * trial_number: trial number	
 * prop_correct_fishing: proportion of correct fishing choices, based on delta_EV
 
-### data_main_experiment_adults.csv
+### data_main_experiment_adults_1.csv (initial study) and data_main_experiment_adults_2.csv (replication)
 Contains the same variables as data_main_experiment_children.csv, but without age_group and age_group_coded
 
 ### data_supplementary_experiment_1.csv
