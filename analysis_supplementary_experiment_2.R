@@ -6,7 +6,7 @@
 rm(list = ls())
 
 # SET WORKING DIRECTORY
-wd = "insert_your_wd_here"
+wd = "insert_your_wd_here" 
 
 #### LOAD REQUIRED PACKAGES #####
 packages <- c("psych", "optimx")
@@ -49,7 +49,8 @@ contrasts(dat_cog_ctrl$gender_coded) <- contr.helmert(2)
 dat_cog_ctrl$info_choice <- as.factor(dat_cog_ctrl$info_choice) # 0 = left, 1 = right
 dat_cog_ctrl$percent_comprehension_non_Z <- as.numeric(dat_cog_ctrl$percent_comprehension)
 dat_cog_ctrl$percent_comprehension <- scale(as.numeric(dat_cog_ctrl$percent_comprehension))
-dat_cog_ctrl$chance <- 0.5
+dat_cog_ctrl$age_in_months_log <- scale(log(as.numeric(dat_cog_ctrl$age_in_months)))
+
 
 ## SE2 Compute scaled deltas
 # Find min and max and rescale between -1 and 1
@@ -143,5 +144,14 @@ child_cog_ctrl_mod_full_drop_C_fixed <- glmer(info_choice ~  1 +
                                                 (delta_uncertainty_level
                                                  | subject_ID), 
                                               data = dat_cog_ctrl, family = binomial, control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+
+# With interaction
+child_cog_ctrl_mod_full_int <- glmer(info_choice ~ delta_uncertainty_level*age_in_months_log + 
+                                   (delta_uncertainty_level
+                                    | subject_ID), 
+                                 data = dat_cog_ctrl, family = binomial, control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)), nAGQ = 0)
+sjPlot::tab_model(child_cog_ctrl_mod_full_int, transform = NULL, auto.label = FALSE, show.stat = TRUE, show.ci=FALSE, show.se=TRUE)
+
+
 ## Significance tests
 child_test_fixed_uncertainty <- anova(child_cog_ctrl_mod_full, child_cog_ctrl_mod_full_drop_C_fixed, test="Chisq")
