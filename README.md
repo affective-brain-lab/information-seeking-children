@@ -2,7 +2,7 @@
 Data and code from manuscript: Molinaro, Cogliati Dezza, Buehler, Moutsiana &amp; Sharot (in prep.)
 
 ## Data files
-### data_main_experiment_children_1.csv (initial study) and data_main_experiment_children_2.csv (replication)
+### data_main_experiment_1.csv (initial study) and data_main_experiment_2.csv (replication)
 Contains the following variables:
 * subject_ID: the participant's ID
 * age_in_years: the participant's age in years
@@ -12,6 +12,7 @@ Contains the following variables:
 * age_group: the participant's age group (4-5, 6-7, 8-9, 10-12)	
 * age_group_coded: the participant's age group (4-5=0, 6-7=1, 8-9=2, 10-12=3)	
 * info_choice: whether the participant wanted more information on the left or on the right side of the screen (left=0, right=1)	
+* trial_number: the trial number
 * condition: trial number (trial_n for normal trials, catch_n for catch trials)	
 * catch_trials: choice on catch trials ("only cans"=0, "only fish"=1)	
 * fishing_choiceL: whether the participant chose to fish on the left side, if given the option (yes=0, no=1)	
@@ -43,9 +44,8 @@ Contains the following variables:
 * catch_trials_score: total score in the catch trials (2/2 correct=100, 1/2 correct=50, 0/2 corect=0)	
 * trial_number: trial number	
 * prop_correct_fishing: proportion of correct fishing choices, based on delta_EV
-
-### data_main_experiment_adults_1.csv (initial study) and data_main_experiment_adults_2.csv (replication)
-Contains the same variables as data_main_experiment_children.csv, but without age_group and age_group_coded
+* fishing_rewardL: reward obtained after the fishing decision was made on the left
+* fishing_rewardR: reward obtained after the fishing decision was made on the right
 
 ### data_supplementary_experiment_1.csv
 Contains the following variables:
@@ -101,12 +101,52 @@ Contains the following variables:
 
 The file is ordered by condition, although conditions appeared in random order in the experiment.
 
+### data_supplementary_experiment_3
+Contains the following variables:
+* subject_ID: the participant's ID
+* age_in_years: the participant's age in years
+* age_in_months: the participant's age in months	
+* gender: the participant's gender (Female, Male, Other)
+* gender_coded: the participant's gender (Female=0, Male=1, Other=2)
+* age_group: the participant's age group (4-5, 6-7, 8-9, 10-12)	
+* age_group_coded: the participant's age group (4-5=0, 6-7=1, 8-9=2, 10-12=3)	
+* trial_number: the trial number
+* answerL: whether the participant thought the left-side fisherman would get a fish (0) or a can (1)	
+* answerR: whether the participant thought the right-side fisherman would get a fish (0) or a can (1)	
+* confidenceL: the participant's confidence level for the left-side decision
+* confidenceR: the participant's confidence level for the left-side decision
+* condition: trial number (trial_n for normal trials, catch_n for catch trials)	
+* combination: whether the first fisherman's items appeared on the left (0) or the righ
+* RT_answerL: reaction time for the left-side answer
+* RT_answerR: reaction time for the right-side answer
+* RT_confidenceL: reaction time for the left-side confidence
+* RT_confidenceR: reaction time for the right-side confidence
+* items_countL: a dictionary containing each item's count for the left side	
+* items_countR: a dictionary containing each item's count for the right side	 		
+* uncertainty_level_L: number of seaweeds on the left side	
+* uncertainty_level_R: number of seaweeds on the right side	
+* n_fish_L: number of fish on the left
+* n_fish_R: number of fish on the right
+* n_cans_L: number of cans on the left
+* n_cans_R: number of cans on the right
+* q1-5: score on the question q_n in the instructions comprehension task (one column per question; 2=responded correctly immediately, 1=responded correctly after one try, 0=responded correctly after two tries)  
+* percent_comprehension: score on the instructions comprehension task	
+
+### data_supplementary_experiment_4.csv (initial study) and data_supplementary_experiment_5.csv (replication)
+Contains the same variables as data_main_experiment_1.csv, but without age_group and age_group_coded
+
 ## Data analysis files
 ### analysis_main_experiment.R
-Contains the analyses for the main experiment
+Contains the analyses for the main experiments (Experiment 1 and Experiment 2)
 
 ### analysis_supplementary_experiment_1.R
-Contains the analyses for Supplementary Experiment 1
+Contains the analyses for Supplementary Experiment 1 (Experiment 3)
 
 ### analysis_supplementary_experiment_2.R
-Contains the analyses for Supplementary Experiment 2
+Contains the analyses for Supplementary Experiment 2 (Experiment 4)
+
+### analysis_supplementary_experiment_3.R
+Contains the analyses for Supplementary Experiment 3 (Experiment 5)
+
+### analysis_supplementary_experiments_4_5.R
+Contains the analyses for Supplementary Experiments 4 and 5 (Experiments 6 and 7)
