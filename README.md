@@ -1,5 +1,5 @@
 # information-seeking-children
-Data and code from manuscript: Molinaro, Cogliati Dezza, Buehler, Moutsiana &amp; Sharot (in prep.)
+Data and code from manuscript: Molinaro, Cogliati Dezza, Buehler, Moutsiana &amp; Sharot (Nature Communications, 2023)
 
 ## Data files
 ### data_experiment_1.csv (initial study) and data_experiment_2.csv (replication)
