@@ -2,7 +2,7 @@
 Data and code from manuscript: Molinaro, Cogliati Dezza, Buehler, Moutsiana &amp; Sharot (in prep.)
 
 ## Data files
-### data_main_experiment_1.csv (initial study) and data_main_experiment_2.csv (replication)
+### data_experiment_1.csv (initial study) and data_experiment_2.csv (replication)
 Contains the following variables:
 * subject_ID: the participant's ID
 * age_in_years: the participant's age in years
@@ -47,7 +47,7 @@ Contains the following variables:
 * fishing_rewardL: reward obtained after the fishing decision was made on the left
 * fishing_rewardR: reward obtained after the fishing decision was made on the right
 
-### data_supplementary_experiment_1.csv
+### data_experiment_3.csv
 Contains the following variables:
 * subject_ID: the participant's ID
 * age_in_years: the participant's age in years
@@ -74,7 +74,7 @@ Contains the following variables:
 
 The file is ordered by condition, although conditions appeared in random order in the experiment.
 
-### data_supplementary_experiment_2
+### data_experiment_4
 Contains the following variables:
 * subject_ID: the participant's ID
 * age_in_years: the participant's age in years
@@ -101,7 +101,7 @@ Contains the following variables:
 
 The file is ordered by condition, although conditions appeared in random order in the experiment.
 
-### data_supplementary_experiment_3
+### data_experiment_5
 Contains the following variables:
 * subject_ID: the participant's ID
 * age_in_years: the participant's age in years
@@ -132,21 +132,21 @@ Contains the following variables:
 * q1-5: score on the question q_n in the instructions comprehension task (one column per question; 2=responded correctly immediately, 1=responded correctly after one try, 0=responded correctly after two tries)  
 * percent_comprehension: score on the instructions comprehension task	
 
-### data_supplementary_experiment_4.csv (initial study) and data_supplementary_experiment_5.csv (replication)
+### data_experiment_6.csv (adults initial study) and data_experiment_7.csv (adults replication)
 Contains the same variables as data_main_experiment_1.csv, but without age_group and age_group_coded
 
 ## Data analysis files
-### analysis_main_experiment.R
-Contains the analyses for the main experiments (Experiment 1 and Experiment 2)
+### analysis_experiments_1_2.R
+Contains the analyses for Experiment 1 and Experiment 2
 
-### analysis_supplementary_experiment_1.R
-Contains the analyses for Supplementary Experiment 1 (Experiment 3)
+### analysis_experiment_3.R
+Contains the analyses for Experiment 3 
 
-### analysis_supplementary_experiment_2.R
-Contains the analyses for Supplementary Experiment 2 (Experiment 4)
+### analysis_experiment_4.R
+Contains the analyses for Experiment 4
 
-### analysis_supplementary_experiment_3.R
-Contains the analyses for Supplementary Experiment 3 (Experiment 5)
+### analysis_experiment_5.R
+Contains the analyses for Experiment 5
 
-### analysis_supplementary_experiments_4_5.R
-Contains the analyses for Supplementary Experiments 4 and 5 (Experiments 6 and 7)
+### analysis_experiments_6_7.R
+Contains the analyses for Experiments 6 and 7
