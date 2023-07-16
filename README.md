@@ -1,4 +1,4 @@
-# information-seeking-children
+# Multifaceted information-seeking motives in children
 Data and code from manuscript: Molinaro, Cogliati Dezza, Buehler, Moutsiana &amp; Sharot (Nature Communications, 2023)
 
 ## Data files
